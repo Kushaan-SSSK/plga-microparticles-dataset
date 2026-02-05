@@ -1,0 +1,10 @@
+rdkit
+tsfresh
+xgboost
+optuna
+scikit-learn
+pandas
+numpy
+seaborn
+statsmodels
+openpyxl
