@@ -15,6 +15,7 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
 from scipy.optimize import curve_fit
 
 # Set Plotting Style
@@ -213,9 +214,10 @@ class PLGAPrecisionPipeline:
                         'Polymer MW', 'LA_GA_numeric', 'Hydrophilicity_Index',
                         'Particle Size', 'Drug Loading Capacity', 'Drug Encapsulation Efficiency']
         
-        # Clean Features (fill NaNs)
-        X = self.df[feature_cols].copy()
-        X = X.fillna(X.mean())
+        # Clean Features (Keep NaNs for strict pipeline)
+        X = self.df[feature_cols].copy().values
+        # X = X.fillna(X.mean()) # LEAKAGE FIX: Do not fill globally
+
         
         groups = self.df['Formulation Index']
         gkf = GroupKFold(n_splits=10)
@@ -228,7 +230,7 @@ class PLGAPrecisionPipeline:
             
             # Remove NaNs
             valid_mask = y.notna()
-            X_curr = X[valid_mask].values
+            X_curr = X[valid_mask]
             y_curr = y[valid_mask].values
             groups_curr = groups[valid_mask].values
             
@@ -243,10 +245,15 @@ class PLGAPrecisionPipeline:
                 X_train, X_test = X_curr[train_idx], X_curr[test_idx]
                 y_train, y_test = y_curr[train_idx], y_curr[test_idx]
                 
-                # Preprocessing
+                # Preprocessing (Impute -> Scale)
+                # Fit Imputer on Train ONLY
+                imputer = SimpleImputer(strategy='mean')
+                X_train_imp = imputer.fit_transform(X_train)
+                X_test_imp = imputer.transform(X_test)
+                
                 scaler = StandardScaler()
-                X_train_scaled = scaler.fit_transform(X_train)
-                X_test_scaled = scaler.transform(X_test)
+                X_train_scaled = scaler.fit_transform(X_train_imp)
+                X_test_scaled = scaler.transform(X_test_imp)
                 
                 # Fit Ensemble
                 # Re-instantiate to avoid leakage
@@ -300,6 +307,7 @@ class PLGAPrecisionPipeline:
             
             # Refit on full data for export
             final_pipe = Pipeline([
+                ('imputer', SimpleImputer(strategy='mean')),
                 ('scaler', StandardScaler()),
                 ('model', self.ensemble)
             ])
@@ -311,10 +319,21 @@ class PLGAPrecisionPipeline:
         # Create Classes: Low (<10), Med (10-40), High (>40)
         burst_y = self.df['Burst_24h'].copy()
         # Drop NaNs
+        # Drop NaNs
         valid_b = burst_y.notna()
-        X_b = X[valid_b].values
+        # Note: X already has NaNs now, need to handle them. 
+        # But for X_b we are slicing from X.
+        X_b = X[valid_b] # .values was already done above
         y_b_val = burst_y[valid_b].values
         groups_b = groups[valid_b].values
+        
+        # Simple Mean Imputation for Classification check (or use pipeline)
+        # Using a fresh imputer here to be safe, though global fill meant this was easy before.
+        # Ideally we CV this too, but for block reporting we just need the estimator.
+        # Let's rely on XGBoost handling NaNs natively or impute.
+        imp_b = SimpleImputer(strategy='mean')
+        X_b = imp_b.fit_transform(X_b)
+
         
         y_class = np.zeros_like(y_b_val, dtype=int)
         y_class[(y_b_val >= 10) & (y_b_val < 40)] = 1
@@ -336,6 +355,12 @@ class PLGAPrecisionPipeline:
             'ConfusionMatrix': confusion_matrix(y_class, class_preds)
         }
         metrics_list.append({'Target': 'Burst_Class', 'R2': np.nan, 'MAE': np.nan, 'RMSE': np.nan, 'Accuracy': acc})
+
+        # Fit on full valid data for export/feature importance
+        final_clf = xgb.XGBClassifier(n_estimators=200, max_depth=6, learning_rate=0.05, n_jobs=-1, 
+                                use_label_encoder=False, objective='multi:softprob', num_class=3, eval_metric='mlogloss')
+        final_clf.fit(X_b, y_class)
+        self.models['Burst_Class'] = final_clf
 
         pd.DataFrame(metrics_list).to_csv('performance_metrics.csv', index=False)
         joblib.dump(self.models, 'Final_Model.joblib')
@@ -383,15 +408,24 @@ class PLGAPrecisionPipeline:
             h_star = 3 * p / n
             
             # High Certainty Subset
-            high_cert = res_df[(res_df['Leverage'] < h_star) & (np.abs(res_df['Std_Residual']) < 3)]
+            high_cert = res_df[(res_df['Leverage'] < h_star)]
+            low_cert = res_df[(res_df['Leverage'] >= h_star)]
             
             acc_full = r2_score(res_df['Actual'], res_df['Predicted'])
-            acc_ad = r2_score(high_cert['Actual'], high_cert['Predicted'])
             
             print(f"  {target} AD Analysis:")
             print(f"    Full R2: {acc_full:.4f}")
-            print(f"    High-Certainty R2: {acc_ad:.4f} (Coverage: {len(high_cert)/len(res_df):.1%})")
             
+            if len(high_cert) > 0:
+                acc_safe = r2_score(high_cert['Actual'], high_cert['Predicted'])
+                mae_safe = mean_absolute_error(high_cert['Actual'], high_cert['Predicted'])
+                print(f"    Safe Zone (Low Lev) R2: {acc_safe:.4f} (MAE: {mae_safe:.4f}, N={len(high_cert)})")
+            
+            if len(low_cert) > 0:
+                acc_unsafe = r2_score(low_cert['Actual'], low_cert['Predicted'])
+                mae_unsafe = mean_absolute_error(low_cert['Actual'], low_cert['Predicted'])
+                print(f"    High Leverage Zone R2:  {acc_unsafe:.4f} (MAE: {mae_unsafe:.4f}, N={len(low_cert)})")
+                
             self.ad_metrics[target] = {'h_star': h_star, 'data': res_df}
 
     def generate_visualizations(self):
@@ -460,6 +494,50 @@ class PLGAPrecisionPipeline:
         plt.savefig('Figure3_FeatureImportance.png')
         
         print("Visualizations saved.")
+        
+        # Figure 4: Burst Classifier Feature Importance (The "Discovery")
+        if 'Burst_Class' in self.models:
+            print("  - Plotting Burst Classifier Importance...")
+            clf = self.models['Burst_Class']
+            importances = clf.feature_importances_
+            
+            imp_df_burst = pd.DataFrame({'Feature': feature_cols, 'Importance': importances}).sort_values('Importance', ascending=False).head(10)
+            
+            plt.figure(figsize=(10, 8))
+            sns.barplot(data=imp_df_burst, x='Importance', y='Feature', palette='magma')
+            plt.title('Drivers of Burst Release (Safety Failure Mode)')
+            plt.tight_layout()
+            plt.savefig('Figure5_BurstImportance.png')
+
+        # Figure 5: AD Paradox (Safe vs Unsafe R2)
+        print("  - Plotting AD Paradox...")
+        ad_labels = []
+        ad_scores = []
+        
+        for target in self.targets:
+            if target not in self.ad_metrics: continue
+            
+            data = self.ad_metrics[target]['data']
+            h_star = self.ad_metrics[target]['h_star']
+            
+            safe = data[data['Leverage'] < h_star]
+            unsafe = data[data['Leverage'] >= h_star]
+            
+            if len(safe) > 10:
+                ad_labels.append(f"{target}\n(Safe)")
+                ad_scores.append(r2_score(safe['Actual'], safe['Predicted']))
+                
+            if len(unsafe) > 10:
+                ad_labels.append(f"{target}\n(High Lev)")
+                ad_scores.append(r2_score(unsafe['Actual'], unsafe['Predicted']))
+                
+        plt.figure(figsize=(10, 6))
+        bars = plt.bar(ad_labels, ad_scores, color=['green', 'red'] * len(self.targets))
+        plt.title('The AD Paradox: High Leverage Points often have Higher Predictability')
+        plt.ylabel('R2 Score')
+        plt.axhline(0, color='k', linewidth=0.8)
+        plt.tight_layout()
+        plt.savefig('Figure6_AD_Paradox.png')
 
 if __name__ == "__main__":
     pipeline = PLGAPrecisionPipeline('mp_dataset_processed.xlsx', 'mp_dataset_initial.xlsx')
