@@ -1,3 +1,13 @@
+"""
+PLGA release prediction pipeline: feature engineering, stacked ensemble regression,
+applicability domain analysis, and burst release classification.
+
+Consumes Excel datasets (processed + initial), outputs metrics, figures, and model artifact.
+"""
+
+import logging
+from pathlib import Path
+from typing import List, Optional
 
 import pandas as pd
 import numpy as np
@@ -12,44 +22,67 @@ from sklearn.svm import SVR
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import GroupKFold, cross_val_predict
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
-from scipy.optimize import curve_fit
 
-# Set Plotting Style
+# Optional config (allows running from src/ or repo root)
+try:
+    import config as _config
+    RANDOM_SEED = _config.RANDOM_SEED
+    FEATURE_COLS = _config.FEATURE_COLS
+except ImportError:
+    RANDOM_SEED = 42
+    FEATURE_COLS = [
+        "Drug MW", "Drug LogP", "Drug TPSA", "MolLogP", "TPSA", "ExactMolWt",
+        "NumHDonors", "NumHAcceptors", "RotatableBonds",
+        "Polymer MW", "LA_GA_numeric", "Hydrophilicity_Index",
+        "Particle Size", "Drug Loading Capacity", "Drug Encapsulation Efficiency",
+    ]
+
+logger = logging.getLogger(__name__)
 sns.set_style("whitegrid")
-plt.rcParams.update({'font.size': 12, 'font.family': 'sans-serif'})
+plt.rcParams.update({"font.size": 12, "font.family": "sans-serif"})
+
 
 class PLGAPrecisionPipeline:
-    def __init__(self, raw_path, initial_path):
+    """
+    End-to-end pipeline: features from formulation + SMILES, targets from release curves,
+    10-fold group CV, stacking ensemble, applicability domain, visualizations.
+    """
+
+    def __init__(self, raw_path: str, initial_path: str, output_dir: Optional[str] = None) -> None:
         self.raw_df = pd.read_excel(raw_path)
         self.initial_df = pd.read_excel(initial_path)
+        self.output_dir = Path(output_dir) if output_dir else Path(".")
         self.df = None
-        self.targets = ['Peppas_n', 'Peppas_K', 'Burst_24h']
+        self.targets: List[str] = ["Peppas_n", "Peppas_K", "Burst_24h"]
         self.models = {}
         self.results = {}
         self.ad_metrics = {}
 
-    def _calculate_rdkit_descriptors(self, smiles):
-        if pd.isna(smiles): return [np.nan]*6
+    def _calculate_rdkit_descriptors(self, smiles: str) -> List[float]:
+        """Compute MolLogP, TPSA, ExactMolWt, NumHDonors, NumHAcceptors, RotatableBonds from SMILES."""
+        if pd.isna(smiles):
+            return [np.nan] * 6
         try:
             mol = Chem.MolFromSmiles(smiles)
-            if not mol: return [np.nan]*6
+            if not mol:
+                return [np.nan] * 6
             return [
                 Descriptors.MolLogP(mol),
                 Descriptors.TPSA(mol),
                 Descriptors.ExactMolWt(mol),
                 Lipinski.NumHDonors(mol),
                 Lipinski.NumHAcceptors(mol),
-                Lipinski.NumRotatableBonds(mol)
+                Lipinski.NumRotatableBonds(mol),
             ]
-        except:
-            return [np.nan]*6
+        except Exception:
+            return [np.nan] * 6
 
-    def engineer_features(self):
-        print("STEP 1: Feature Engineering...")
+    def engineer_features(self) -> None:
+        """Build one row per Formulation Index with RDKit and polymer-derived features."""
+        logger.info("STEP 1: Feature Engineering...")
         
         # 1. Consolidate Data
         # Extract unique formulation parameters from raw_df (which has Time/Release repeats)
@@ -72,7 +105,7 @@ class PLGAPrecisionPipeline:
             )
         
         # 2. Chemical Featurization (RDKit)
-        print("  - Calculating RDKit descriptors...")
+        logger.info("  - Calculating RDKit descriptors...")
         # Recalculate Descriptors from SMILES to ensure we have "Computed" values vs "Reported" values
         # And specifically exact features like NumHDonors which might not be in raw_df
         if 'Drug SMILES' in formulation_params.columns:
@@ -88,7 +121,7 @@ class PLGAPrecisionPipeline:
             formulation_params = pd.concat([formulation_params, rdkit_df], axis=1)
         
         # 3. Polymer Engineering
-        print("  - Engineering Polymer features...")
+        logger.info("  - Engineering Polymer features...")
         # LA/GA Ratio
         # Check if 'LA/GA' is in params
         if 'LA/GA' in formulation_params.columns:
@@ -111,12 +144,13 @@ class PLGAPrecisionPipeline:
         # Hydrophilicity Index
         formulation_params['Hydrophilicity_Index'] = (1.0 / (formulation_params['LA_GA_numeric'] + 1e-6)) * (1.0 / formulation_params['Polymer_Mw_Clean'])
         
-        print("DEBUG: formulation_params columns:", formulation_params.columns.tolist())
-        print("DEBUG: formulation_params shape:", formulation_params.shape)
+        logger.debug("formulation_params columns: %s", formulation_params.columns.tolist())
+        logger.debug("formulation_params shape: %s", formulation_params.shape)
         self.df = formulation_params
 
-    def engineer_targets(self):
-        print("STEP 2: Target Engineering (Mechanistic)...")
+    def engineer_targets(self) -> None:
+        """Compute Peppas_n, Peppas_K, Burst_24h from release curves (Korsmeyer-Peppas fit; time in hours)."""
+        logger.info("STEP 2: Target Engineering (Mechanistic)...")
         results = []
         
         grouped = self.raw_df.groupby('Formulation Index')
@@ -177,21 +211,21 @@ class PLGAPrecisionPipeline:
                 continue
                 
         target_df = pd.DataFrame(results)
-        print("DEBUG: target_df shape:", target_df.shape)
-        # Check duplicate keys in target_df?
-        if target_df['Formulation Index'].duplicated().any():
-             print("WARNING: Duplicates in target_df Formulation Index!")
-             
-        self.df = self.df.merge(target_df, on='Formulation Index', how='inner')
-        print(f"  - Features + Targets merged. Final shape: {self.df.shape}")
+        logger.debug("target_df shape: %s", target_df.shape)
+        if target_df["Formulation Index"].duplicated().any():
+            logger.warning("Duplicates in target_df Formulation Index")
+        self.df = self.df.merge(target_df, on="Formulation Index", how="inner")
+        logger.info("  - Features + Targets merged. Final shape: %s", self.df.shape)
 
-    def build_ensemble(self):
-        print("STEP 3: Stacked Ensemble Architecture...")
-        
-        # Defined Level 0 Models
-        rf = RandomForestRegressor(n_estimators=200, max_depth=10, random_state=42, n_jobs=-1)
-        xgb_mod = xgb.XGBRegressor(n_estimators=200, learning_rate=0.05, max_depth=6, n_jobs=-1, objective='reg:squarederror')
-        svr = SVR(kernel='rbf', C=10, gamma='scale')
+    def build_ensemble(self) -> None:
+        """Define stacking ensemble: RF + XGBoost + SVR -> Ridge meta-learner."""
+        logger.info("STEP 3: Stacked Ensemble Architecture...")
+        rf = RandomForestRegressor(n_estimators=200, max_depth=10, random_state=RANDOM_SEED, n_jobs=-1)
+        xgb_mod = xgb.XGBRegressor(
+            n_estimators=200, learning_rate=0.05, max_depth=6, n_jobs=-1,
+            objective="reg:squarederror", random_state=RANDOM_SEED,
+        )
+        svr = SVR(kernel="rbf", C=10, gamma="scale")
         
         # Level 1 Meta-Learner
         ridge = Ridge(alpha=1.0)
@@ -204,17 +238,10 @@ class PLGAPrecisionPipeline:
             n_jobs=-1
         )
         
-    def train_and_validate(self):
-        print("STEP 3b: Training & Validation (10-Fold Grouped)...")
-        print("DEBUG: Columns in self.df:", self.df.columns.tolist())
-        
-        # Features
-        feature_cols = ['Drug MW', 'Drug LogP', 'Drug TPSA', 'MolLogP', 'TPSA', 'ExactMolWt', 
-                        'NumHDonors', 'NumHAcceptors', 'RotatableBonds',
-                        'Polymer MW', 'LA_GA_numeric', 'Hydrophilicity_Index',
-                        'Particle Size', 'Drug Loading Capacity', 'Drug Encapsulation Efficiency']
-        
-        # Clean Features (Keep NaNs for strict pipeline)
+    def train_and_validate(self) -> None:
+        """10-fold group CV, mean imputation per fold, stacking; burst 3-class classification."""
+        logger.info("STEP 3b: Training & Validation (10-Fold Grouped)...")
+        feature_cols = FEATURE_COLS
         X = self.df[feature_cols].copy().values
         # X = X.fillna(X.mean()) # LEAKAGE FIX: Do not fill globally
 
@@ -225,7 +252,7 @@ class PLGAPrecisionPipeline:
         metrics_list = []
         
         for target in self.targets:
-            print(f"  - Training for {target}...")
+            logger.info("  - Training for %s...", target)
             y = self.df[target].copy()
             
             # Remove NaNs
@@ -255,11 +282,12 @@ class PLGAPrecisionPipeline:
                 X_train_scaled = scaler.fit_transform(X_train_imp)
                 X_test_scaled = scaler.transform(X_test_imp)
                 
-                # Fit Ensemble
-                # Re-instantiate to avoid leakage
-                rf = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42, n_jobs=-1)
-                xgb_mod = xgb.XGBRegressor(n_estimators=100, learning_rate=0.05, max_depth=6, n_jobs=-1, objective='reg:squarederror')
-                svr = SVR(kernel='rbf', C=10, gamma='scale')
+                rf = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=RANDOM_SEED, n_jobs=-1)
+                xgb_mod = xgb.XGBRegressor(
+                    n_estimators=100, learning_rate=0.05, max_depth=6, n_jobs=-1,
+                    objective="reg:squarederror", random_state=RANDOM_SEED,
+                )
+                svr = SVR(kernel="rbf", C=10, gamma="scale")
                 
                 stack = StackingRegressor(
                     estimators=[('rf', rf), ('xgb', xgb_mod), ('svr', svr)],
@@ -293,8 +321,7 @@ class PLGAPrecisionPipeline:
             r2 = r2_score(all_actual, all_pred)
             mae = mean_absolute_error(all_actual, all_pred)
             rmse = np.sqrt(mean_squared_error(all_actual, all_pred))
-            
-            print(f"    {target}: R2={r2:.3f}, MAE={mae:.3f}")
+            logger.info("    %s: R2=%.3f, MAE=%.3f", target, r2, mae)
             
             metrics_list.append({'Target': target, 'R2': r2, 'MAE': mae, 'RMSE': rmse})
             
@@ -314,8 +341,7 @@ class PLGAPrecisionPipeline:
             final_pipe.fit(X_curr, y_curr)
             self.models[target] = final_pipe
 
-        # BURST CLASSIFICATION
-        print("  - Running Burst Classification...")
+        logger.info("  - Running Burst Classification...")
         # Create Classes: Low (<10), Med (10-40), High (>40)
         burst_y = self.df['Burst_24h'].copy()
         # Drop NaNs
@@ -339,15 +365,15 @@ class PLGAPrecisionPipeline:
         y_class[(y_b_val >= 10) & (y_b_val < 40)] = 1
         y_class[y_b_val >= 40] = 2
         
-        clf = xgb.XGBClassifier(n_estimators=200, max_depth=6, learning_rate=0.05, n_jobs=-1, 
-                                use_label_encoder=False, objective='multi:softprob', num_class=3, eval_metric='mlogloss')
-        
-        # Cross val
+        clf = xgb.XGBClassifier(
+            n_estimators=200, max_depth=6, learning_rate=0.05, n_jobs=-1,
+            use_label_encoder=False, objective="multi:softprob", num_class=3,
+            eval_metric="mlogloss", random_state=RANDOM_SEED,
+        )
         class_preds = cross_val_predict(clf, X_b, y_class, cv=gkf, groups=groups_b)
-        
-        from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+        from sklearn.metrics import accuracy_score, confusion_matrix
         acc = accuracy_score(y_class, class_preds)
-        print(f"    Burst Classification Accuracy: {acc:.3f}")
+        logger.info("    Burst Classification Accuracy: %.3f", acc)
         
         self.results['Burst_Class'] = {
             'Actual': y_class,
@@ -356,29 +382,24 @@ class PLGAPrecisionPipeline:
         }
         metrics_list.append({'Target': 'Burst_Class', 'R2': np.nan, 'MAE': np.nan, 'RMSE': np.nan, 'Accuracy': acc})
 
-        # Fit on full valid data for export/feature importance
-        final_clf = xgb.XGBClassifier(n_estimators=200, max_depth=6, learning_rate=0.05, n_jobs=-1, 
-                                use_label_encoder=False, objective='multi:softprob', num_class=3, eval_metric='mlogloss')
+        final_clf = xgb.XGBClassifier(
+            n_estimators=200, max_depth=6, learning_rate=0.05, n_jobs=-1,
+            use_label_encoder=False, objective="multi:softprob", num_class=3,
+            eval_metric="mlogloss", random_state=RANDOM_SEED,
+        )
         final_clf.fit(X_b, y_class)
-        self.models['Burst_Class'] = final_clf
+        self.models["Burst_Class"] = final_clf
 
-        pd.DataFrame(metrics_list).to_csv('performance_metrics.csv', index=False)
-        joblib.dump(self.models, 'Final_Model.joblib')
+        out = self.output_dir
+        pd.DataFrame(metrics_list).to_csv(out / "performance_metrics.csv", index=False)
+        joblib.dump(self.models, out / "Final_Model.joblib")
 
-    def analyze_applicability_domain(self):
-        print("STEP 4: Applicability Domain (Williams Plot)...")
-        # Leverage (Hat Matrix diagonal) vs Standardized Residuals
-        # H = X(X^TX)^-1X^T
-        
+    def analyze_applicability_domain(self) -> None:
+        """Williams plot: leverage (hat diagonal) vs standardized residuals; safe vs high-leverage R2."""
+        logger.info("STEP 4: Applicability Domain (Williams Plot)...")
+        feature_cols = FEATURE_COLS
         for target in self.targets:
             res_df = self.results[target]
-            
-            # Reconstruct X for valid rows used in training
-            feature_cols = ['Drug MW', 'Drug LogP', 'Drug TPSA', 'MolLogP', 'TPSA', 'ExactMolWt', 
-                        'NumHDonors', 'NumHAcceptors', 'RotatableBonds',
-                        'Polymer MW', 'LA_GA_numeric', 'Hydrophilicity_Index',
-                        'Particle Size', 'Drug Loading Capacity', 'Drug Encapsulation Efficiency']
-            
             valid_idx = self.df[self.df[target].notna()].index
             X = self.df.loc[valid_idx, feature_cols].fillna(0).values
             scaler = StandardScaler()
@@ -411,25 +432,23 @@ class PLGAPrecisionPipeline:
             high_cert = res_df[(res_df['Leverage'] < h_star)]
             low_cert = res_df[(res_df['Leverage'] >= h_star)]
             
-            acc_full = r2_score(res_df['Actual'], res_df['Predicted'])
-            
-            print(f"  {target} AD Analysis:")
-            print(f"    Full R2: {acc_full:.4f}")
-            
+            acc_full = r2_score(res_df["Actual"], res_df["Predicted"])
+            logger.info("  %s AD Analysis: Full R2=%.4f", target, acc_full)
             if len(high_cert) > 0:
-                acc_safe = r2_score(high_cert['Actual'], high_cert['Predicted'])
-                mae_safe = mean_absolute_error(high_cert['Actual'], high_cert['Predicted'])
-                print(f"    Safe Zone (Low Lev) R2: {acc_safe:.4f} (MAE: {mae_safe:.4f}, N={len(high_cert)})")
-            
+                acc_safe = r2_score(high_cert["Actual"], high_cert["Predicted"])
+                mae_safe = mean_absolute_error(high_cert["Actual"], high_cert["Predicted"])
+                logger.info("    Safe Zone (Low Lev) R2: %.4f (MAE: %.4f, N=%d)", acc_safe, mae_safe, len(high_cert))
             if len(low_cert) > 0:
-                acc_unsafe = r2_score(low_cert['Actual'], low_cert['Predicted'])
-                mae_unsafe = mean_absolute_error(low_cert['Actual'], low_cert['Predicted'])
-                print(f"    High Leverage Zone R2:  {acc_unsafe:.4f} (MAE: {mae_unsafe:.4f}, N={len(low_cert)})")
+                acc_unsafe = r2_score(low_cert["Actual"], low_cert["Predicted"])
+                mae_unsafe = mean_absolute_error(low_cert["Actual"], low_cert["Predicted"])
+                logger.info("    High Leverage Zone R2: %.4f (MAE: %.4f, N=%d)", acc_unsafe, mae_unsafe, len(low_cert))
                 
-            self.ad_metrics[target] = {'h_star': h_star, 'data': res_df}
+            self.ad_metrics[target] = {"h_star": h_star, "data": res_df}
 
-    def generate_visualizations(self):
-        print("STEP 5: Visualization...")
+    def generate_visualizations(self) -> None:
+        """Save mechanism map, AD plot, feature importance, burst importance, AD paradox figures."""
+        logger.info("STEP 5: Visualization...")
+        out = self.output_dir
         
         # Figure 1: Mechanism Map (n values)
         plt.figure(figsize=(10, 6))
@@ -453,8 +472,9 @@ class PLGAPrecisionPipeline:
         plt.ylabel('Predicted n')
         plt.legend()
         plt.tight_layout()
-        plt.savefig('Figure1_MechanismMap.png')
-        
+        plt.savefig(out / "Figure1_MechanismMap.png")
+        plt.close()
+
         # Figure 2: AD Plot for Burst
         plt.figure(figsize=(10, 6))
         ad_data = self.ad_metrics['Burst_24h']['data']
@@ -469,105 +489,101 @@ class PLGAPrecisionPipeline:
         
         plt.title('Applicability Domain: Williams Plot (Burst Release)')
         plt.xlabel('Leverage (Model Space Distance)')
-        plt.ylabel('Standardized Residuals')
+        plt.ylabel("Standardized Residuals")
         plt.legend()
         plt.tight_layout()
-        plt.savefig('Figure2_ApplicabilityDomain.png')
-        
-        # Figure 3: Feature Importance (From RandomForest in Ensemble)
-        # Extract RF from Peppas_n model pipeline
-        # pipe['model'].estimators_[0] is ('rf', RF)
-        
-        rf_model = self.models['Peppas_n'].named_steps['model'].estimators_[0]
-        importances = rf_model.feature_importances_
-        feature_cols = ['Drug MW', 'Drug LogP', 'Drug TPSA', 'MolLogP', 'TPSA', 'ExactMolWt', 
-                        'NumHDonors', 'NumHAcceptors', 'RotatableBonds',
-                        'Polymer MW', 'LA_GA_numeric', 'Hydrophilicity_Index',
-                        'Particle Size', 'Drug Loading Capacity', 'Drug Encapsulation Efficiency']
-        
-        imp_df = pd.DataFrame({'Feature': feature_cols, 'Importance': importances}).sort_values('Importance', ascending=False).head(10)
-        
-        plt.figure(figsize=(10, 8))
-        sns.barplot(data=imp_df, x='Importance', y='Feature', palette='viridis')
-        plt.title('Top 10 Drivers of Release Mechanism (n)')
-        plt.tight_layout()
-        plt.savefig('Figure3_FeatureImportance.png')
-        
-        print("Visualizations saved.")
-        
-        # Figure 4: Burst Classifier Feature Importance (The "Discovery")
-        if 'Burst_Class' in self.models:
-            print("  - Plotting Burst Classifier Importance...")
-            clf = self.models['Burst_Class']
-            importances = clf.feature_importances_
-            
-            imp_df_burst = pd.DataFrame({'Feature': feature_cols, 'Importance': importances}).sort_values('Importance', ascending=False).head(10)
-            
-            plt.figure(figsize=(10, 8))
-            sns.barplot(data=imp_df_burst, x='Importance', y='Feature', palette='magma')
-            plt.title('Drivers of Burst Release (Safety Failure Mode)')
-            plt.tight_layout()
-            plt.savefig('Figure5_BurstImportance.png')
+        plt.savefig(out / "Figure2_ApplicabilityDomain.png")
+        plt.close()
 
-        # Figure 5: AD Paradox (Safe vs Unsafe R2)
-        print("  - Plotting AD Paradox...")
+        rf_model = self.models["Peppas_n"].named_steps["model"].estimators_[0]
+        importances = rf_model.feature_importances_
+        feature_cols = FEATURE_COLS
+        imp_df = pd.DataFrame({"Feature": feature_cols, "Importance": importances}).sort_values("Importance", ascending=False).head(10)
+        plt.figure(figsize=(10, 8))
+        sns.barplot(data=imp_df, x="Importance", y="Feature", palette="viridis")
+        plt.title("Top 10 Drivers of Release Mechanism (n)")
+        plt.tight_layout()
+        plt.savefig(out / "Figure3_FeatureImportance.png")
+        plt.close()
+
+        logger.info("Visualizations saved.")
+        if "Burst_Class" in self.models:
+            logger.info("  - Plotting Burst Classifier Importance...")
+            clf = self.models["Burst_Class"]
+            importances = clf.feature_importances_
+            imp_df_burst = pd.DataFrame({"Feature": feature_cols, "Importance": importances}).sort_values("Importance", ascending=False).head(10)
+            plt.figure(figsize=(10, 8))
+            sns.barplot(data=imp_df_burst, x="Importance", y="Feature", palette="magma")
+            plt.title("Drivers of Burst Release (Safety Failure Mode)")
+            plt.tight_layout()
+            plt.savefig(out / "Figure5_BurstImportance.png")
+            plt.close()
+
+        logger.info("  - Plotting AD Paradox...")
         ad_labels = []
         ad_scores = []
-        
         for target in self.targets:
-            if target not in self.ad_metrics: continue
-            
-            data = self.ad_metrics[target]['data']
-            h_star = self.ad_metrics[target]['h_star']
-            
-            safe = data[data['Leverage'] < h_star]
-            unsafe = data[data['Leverage'] >= h_star]
-            
+            if target not in self.ad_metrics:
+                continue
+            data = self.ad_metrics[target]["data"]
+            h_star = self.ad_metrics[target]["h_star"]
+            safe = data[data["Leverage"] < h_star]
+            unsafe = data[data["Leverage"] >= h_star]
             if len(safe) > 10:
                 ad_labels.append(f"{target}\n(Safe)")
-                ad_scores.append(r2_score(safe['Actual'], safe['Predicted']))
-                
+                ad_scores.append(r2_score(safe["Actual"], safe["Predicted"]))
             if len(unsafe) > 10:
                 ad_labels.append(f"{target}\n(High Lev)")
-                ad_scores.append(r2_score(unsafe['Actual'], unsafe['Predicted']))
-                
+                ad_scores.append(r2_score(unsafe["Actual"], unsafe["Predicted"]))
         plt.figure(figsize=(10, 6))
-        bars = plt.bar(ad_labels, ad_scores, color=['green', 'red'] * len(self.targets))
-        plt.title('The AD Paradox: High Leverage Points often have Higher Predictability')
-        plt.ylabel('R2 Score')
-        plt.axhline(0, color='k', linewidth=0.8)
+        plt.bar(ad_labels, ad_scores, color=["green", "red"] * len(self.targets))
+        plt.title("The AD Paradox: High Leverage Points often have Higher Predictability")
+        plt.ylabel("R2 Score")
+        plt.axhline(0, color="k", linewidth=0.8)
         plt.tight_layout()
-        plt.savefig('Figure6_AD_Paradox.png')
+        plt.savefig(out / "Figure6_AD_Paradox.png")
+        plt.close()
 
-if __name__ == "__main__":
-    pipeline = PLGAPrecisionPipeline('mp_dataset_processed.xlsx', 'mp_dataset_initial.xlsx')
+
+def run_pipeline(raw_path: str, initial_path: str, output_dir: str) -> None:
+    """Run full pipeline and write all artifacts to output_dir."""
+    try:
+        import config as _c
+        _c.set_seeds()
+    except ImportError:
+        pass
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    pipeline = PLGAPrecisionPipeline(raw_path, initial_path, str(out))
     pipeline.engineer_features()
     pipeline.engineer_targets()
     pipeline.build_ensemble()
     pipeline.train_and_validate()
     pipeline.analyze_applicability_domain()
     pipeline.generate_visualizations()
-    print("\n=== Precision Pipeline Complete ===")
-    print("Artifacts Generated: Figures 1-3, Final_Model.joblib, performance_metrics.csv")
-    
-    # Export detailed predictions
+    logger.info("=== Precision Pipeline Complete ===")
+
     all_res = []
     for target, res in pipeline.results.items():
         if isinstance(res, pd.DataFrame):
             df = res.copy()
-            df['Target'] = target
+            df["Target"] = target
             all_res.append(df)
-        elif isinstance(res, dict) and 'Actual' in res:
-             # Convert Burst dict to DF
-             df = pd.DataFrame({
-                 'Actual': res['Actual'],
-                 'Predicted': res['Predicted']
-             })
-             # Confusion Matrix is lost here but reproduced in visualization script if needed? 
-             # Actually visualize_refinement computes it from Actual/Predicted so it's fine.
-             df['Target'] = target
-             all_res.append(df)
-
+        elif isinstance(res, dict) and "Actual" in res:
+            df = pd.DataFrame({"Actual": res["Actual"], "Predicted": res["Predicted"], "Target": target})
+            all_res.append(df)
     if all_res:
-        pd.concat(all_res).to_csv('all_predictions_and_uncertainty.csv', index=False)
-        print("Detailed predictions exported to all_predictions_and_uncertainty.csv")
+        pd.concat(all_res).to_csv(out / "all_predictions_and_uncertainty.csv", index=False)
+        logger.info("Exported all_predictions_and_uncertainty.csv to %s", out)
+
+
+if __name__ == "__main__":
+    import config as _cfg
+    data_dir = _cfg.DATA_DIR
+    out_dir = _cfg.OUTPUT_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
+    raw = data_dir / _cfg.RAW_DATASET
+    initial = data_dir / _cfg.INITIAL_DATASET
+    if not raw.exists() or not initial.exists():
+        raise FileNotFoundError("Place mp_dataset_processed.xlsx and mp_dataset_initial.xlsx in data/")
+    run_pipeline(str(raw), str(initial), str(out_dir))

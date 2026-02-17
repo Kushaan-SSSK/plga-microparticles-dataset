@@ -1,42 +1,95 @@
-# Quantifying the Data Ceiling: A Mechanistic-ML Evaluation of PLGA Microparticles
+# PLGA Release Prediction: Data Ceiling and Safety Classification
 
-**Status:** Validated Diagnostic Study
-**Key Outcome:** 100% Safety Classification Accuracy despite low quantitative predictability.
+**Citation.** If you use this code, please cite:
 
-## Abstract
-This project evaluates the limits of Machine Learning in predicting the release characteristics of PLGA microparticles from heterogeneous literature data. While exact quantitative prediction of release rates is limited by manufacturing variability ($R^2 \approx 0.35$), we demonstrate that ML is highly effective at **Safety Classification**, achieving **100% accuracy** in predicting Burst Release failures. furthermore, our Applicability Domain analysis reveals an "Island of Predictability" paradox, where outlier formulations often yield higher predictability than the global average, highlighting specific well-controlled sub-domains within the literature.
+```bibtex
+@article{plga2025,
+  title={Quantifying the Data Ceiling: A Mechanistic-ML Evaluation of PLGA Microparticles},
+  author={Anonymous},
+  journal={...},
+  year={2025}
+}
+```
+*(Update with final citation when published.)*
 
-## Key Findings (The "Data Ceiling")
+## Overview
 
-### 1. Safety Profiling is Solved
-Feature engineering successfully isolates high-risk "Burst Release" (>40%) formulations from safe ones (<10%).
-*   **Accuracy:** 1.000 (Validated with strict leakage-free 80/20 split)
-*   **Driver:** Physical chemistry descriptors (MolLogP, Polymer MW) create clear separation boundaries.
+This repository reproduces the main results of the paper on machine learning limits for predicting PLGA microparticle release from literature data. It includes: (1) feature engineering from formulation parameters and drug SMILES, (2) stacked ensemble regression (Peppas n, Peppas K, Burst at 24 h), (3) applicability domain (Williams plot) and the "AD paradox" analysis, and (4) burst release safety classification (100% accuracy under strict 80/20 grouped validation). Figures and tables are generated deterministically with a fixed random seed.
 
-### 2. The Applicability Domain Paradox
-Contrary to standard assumption, the "Safe Zone" (low leverage) of the Applicability Domain is *less* predictable ($R^2 \approx 0.35$) than the "High Leverage" zone ($R^2 > 0.70$).
-*   **Interpretation:** "Outliers" in this dataset likely represent consistent, high-quality specific studies, while the "Average" represents the noisy, conflicting bulk of aggregated literature.
+## Environment
 
-## Repository Structure
-*   `src/plga_pipeline_v2.py`: Main production pipeline (Feature Engineering -> Stacked Ensemble -> AD Analysis).
-*   `src/rigorous_validation.py`: Validation script proving the 100% accuracy is not coverage/leakage.
-*   `performance_metrics.csv`: Detailed model performance.
-*   `all_predictions_and_uncertainty.csv`: Model predictions with uncertainty quantification.
+- **Python:** 3.8 or 3.9 recommended.
+- **Install:**
 
-## Running the Pipeline
 ```bash
-# Install dependencies
+python -m venv .venv
+.venv\Scripts\activate   # Windows
+# source .venv/bin/activate  # Linux/macOS
 pip install -r requirements.txt
-
-# Run the full pipeline (generates all figures)
-python src/plga_pipeline_v2.py
-
-# Run the strict validation check
-python -m src.rigorous_validation
 ```
 
-## Figures
-*   **Figure 1:** Mechanism Map (Fickian vs Case II)
-*   **Figure 2:** Applicability Domain (Williams Plot)
-*   **Figure 5:** Drivers of Burst Release (Feature Importance)
-*   **Figure 6:** The AD Paradox (Safe vs Unsafe R2)
+## Data
+
+Place the following files in the `data/` directory (they are not included in the repo):
+
+- `mp_dataset_processed.xlsx` — formulation-level time-series (Time, Release per Formulation Index).
+- `mp_dataset_initial.xlsx` — formulation metadata and Drug SMILES.
+
+Time is assumed to be in **hours**; Burst_24h is release at 24 h. Obtain these datasets as described in the paper or from the authors.
+
+## Reproducing Results
+
+**Figures and tables are not stored in the repository.** Run the command below to generate all outputs (figures and CSVs) into `outputs/`.
+
+From the repository root (after activating the venv):
+
+```bash
+# Generate all figures and results (single command)
+python scripts/run_all.py
+
+# Fast: pipeline + validation only (no benchmarks or refinement figures)
+python scripts/run_all.py --fast
+```
+
+Or run steps individually:
+
+```bash
+# 1. Main pipeline (figures, metrics, model, predictions)
+python -m src.plga_pipeline_v2
+
+# 2. Rigorous 80/20 validation (leakage check)
+python -m src.rigorous_validation
+
+# 3. Benchmarks (optional)
+python benchmark_baselines.py
+
+# 4. Refinement figures (optional; requires step 1 and 3 outputs)
+python visualize_refinement.py
+```
+
+All outputs are written to **`outputs/`** (created automatically). Input paths use **`data/`** by default; override with `DATA_DIR` and `OUTPUT_DIR` environment variables or `--data-dir` / `--output-dir` in `run_all.py`.
+
+## Expected Outputs (generated by the command above)
+
+After running `python scripts/run_all.py`, the following appear in **`outputs/`** (created automatically; not in the repo):
+
+| Location   | Content |
+|-----------|---------|
+| `outputs/` | `performance_metrics.csv`, `all_predictions_and_uncertainty.csv`, `Final_Model.joblib` |
+| `outputs/` | `Figure1_MechanismMap.png`, `Figure2_ApplicabilityDomain.png`, `Figure3_FeatureImportance.png`, `Figure5_BurstImportance.png`, `Figure6_AD_Paradox.png` |
+| (full run only) | `Figure4_UncertaintyCalibration.png`, `Figure5_BurstClassification.png`, `Figure6_Benchmarking.png`, `benchmark_results.csv` |
+
+## Hardware and Runtime
+
+- Runs on CPU; no GPU required.
+- Full `run_all.py`: roughly 5–15 minutes depending on machine (group CV and benchmarks are the slowest).
+- `--fast`: about 2–5 minutes.
+
+## Reproducibility
+
+- Random seed is fixed in `config.py` (`RANDOM_SEED = 42`) and applied to numpy, sklearn, and XGBoost.
+- Dependencies are bounded in `requirements.txt`; for exact replication, use a pinned environment (e.g. `pip freeze > requirements-frozen.txt` after install).
+
+## License
+
+See `LICENSE` in the repository root if present.

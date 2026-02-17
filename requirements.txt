@@ -1,10 +1,11 @@
-rdkit
-tsfresh
-xgboost
-optuna
-scikit-learn
-pandas
-numpy
-seaborn
-statsmodels
-openpyxl
+# Core (pinned for reproducibility)
+numpy>=1.21,<3
+pandas>=1.3,<3
+scikit-learn>=1.0,<2
+xgboost>=1.5,<3
+openpyxl>=3.0
+rdkit>=2022.03
+matplotlib>=3.5
+seaborn>=0.11
+scipy>=1.7
+joblib>=1.0
