@@ -3,11 +3,11 @@
 **Citation.** If you use this code, please cite:
 
 ```bibtex
-@article{plga2025,
+@article{plga2026,
   title={Quantifying the Data Ceiling: A Mechanistic-ML Evaluation of PLGA Microparticles},
   author={Anonymous},
   journal={...},
-  year={2025}
+  year={2026}
 }
 ```
 *(Update with final citation when published.)*

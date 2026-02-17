@@ -13,5 +13,7 @@ figures/
 *.joblib
 *.pkl
 *.tex
-data/*.xlsx
+*.png
+*.xlsx
+data/*
 !data/.gitkeep
