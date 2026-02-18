@@ -15,5 +15,4 @@ figures/
 *.tex
 *.png
 *.xlsx
-data/*
-!data/.gitkeep
+data/
