@@ -27,7 +27,7 @@ pip install -r requirements.txt
 
 ## Accessing the data
 
-The dataset is **not included** in this repository (e.g. for redistribution or licensing reasons). To run the pipeline you must obtain the data separately.
+The dataset is **not included** in this repository (e.g. for redistribution/licensing reasons). To run the pipeline you must obtain the data separately.
 
 1. **Download the dataset** from Mendeley Data:  
    [https://data.mendeley.com/datasets/zzvtdrcy76/2](https://data.mendeley.com/datasets/zzvtdrcy76/2)  
