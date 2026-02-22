@@ -46,9 +46,9 @@ All scripts and the pipeline use the path **`data/`** for data files (via `confi
 
 ### Citation
 
-If you use this dataset, please cite:
+If you use this dataset, please cite the original source.
 
-> Bao, Zeqing; Kim, Jongwhi; Kwok, Candice; Le Devedec, Frantz; Allen, Christine (2024), “A Dataset on Formulation Parameters and Characteristics of Drug-Loaded PLGA Microparticles”, Mendeley Data, V2, doi: 10.17632/zzvtdrcy76.2
+> “Bao, Zeqing; Kim, Jongwhi; Kwok, Candice; Le Devedec, Frantz; Allen, Christine (2024), “A Dataset on Formulation Parameters and Characteristics of Drug-Loaded PLGA Microparticles”, Mendeley Data, V2, doi: 10.17632/zzvtdrcy76.2
 
 ---
 
@@ -94,4 +94,3 @@ Generated under `outputs/`:
 
 - **Determinism:** Random seed 42 is set in `config.py` and used for numpy, sklearn, and XGBoost. Train/validation/test splits are fixed.
 - **Environment:** Python 3.10 and library versions are pinned in `requirements.txt`. Use the same environment for matching results.
-- **Git history:** For anonymous review, clean commit history before submission (e.g. squash to one commit or re-initialize the repo and make a single clean commit). Reviewers may check commit authors.
