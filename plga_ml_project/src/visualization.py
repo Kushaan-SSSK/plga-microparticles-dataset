@@ -42,7 +42,7 @@ class PLGAVisualizer:
         # Drop non-features
         exclude = ['Formulation Index', 'Drug', 'DOI', 'Article Title', 'Higuchi_MSE', 'Higuchi_K', 
                    'Y1_Burst', 'Y2_t50', 'Y3_Cluster', 'Drug_Class', 'Residual_Y2', 'Release', 'Time',
-                   'Burst_Slope', 'Lag_Duration', 'Peppas_n']
+                   'Burst_Slope', 'Lag_Duration', 'Peppas_n', 'Predicted', 'Residuals', 'Uncertainty', 'Std_Residual', 'Leverage', 'Z_Score']
         
         # Handle categoricals
         X_df = self.df.drop(columns=[c for c in exclude if c in self.df.columns], errors='ignore')
@@ -127,8 +127,9 @@ class PLGAVisualizer:
             ax.fill(angles, values, alpha=0.1)
             
         plt.xticks(angles[:-1], categories)
-        plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
-        plt.title('Model Performance by Drug Class')
+        plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
+        plt.title('Model Performance by Drug Class', y=1.1)
+        plt.tight_layout()
         plt.savefig('Figure1_Radar.png')
         print("Figure 1 saved.")
 
@@ -141,13 +142,18 @@ class PLGAVisualizer:
         merged = self.raw_df.merge(self.df[['Formulation Index', 'Residual_Y2']], on='Formulation Index')
         
         # Identify "Informational" columns (parameters)
-        info_cols = ['Drug MW', 'Polymer MW', 'LA/GA', 'Particle Size', 'Drug Loading Capacity', 
-                     'Drug Encapsulation Efficiency', 'Porosity', 'Pore Size', 'Tg', 'Viscosity'] 
+        info_cols = ['Drug MW', 'Polymer Mw', 'Polymer Mn', 'PDI', 'LA/GA', 'Particle Size', 
+                     'Drug Loading Capacity', 'Drug Encapsulation Efficiency', 'Formulation Method',
+                     'Polymer Molecular Weight (unit not specified)'] 
         # Check which exists
         cols_to_check = [c for c in info_cols if c in merged.columns]
         
         # Create binary missingness matrix
         missingness = merged[cols_to_check].isnull().astype(int)
+        
+        # Filter out constant columns (variance == 0) to avoid NaN correlations
+        missingness = missingness.loc[:, missingness.var() > 0]
+        
         missingness['Residual'] = merged['Residual_Y2']
         
         # Correlation

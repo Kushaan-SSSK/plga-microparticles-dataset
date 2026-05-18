@@ -184,7 +184,7 @@ out()
 p = 15
 out(r"\begin{table}[ht]")
 out(r"\centering")
-out(r"\caption{Applicability-domain analysis: performance inside and outside the warning leverage threshold $h^* = 3p/n$.}")
+out(r"\caption{Applicability-domain analysis: performance inside and outside the warning leverage threshold $h^* = 3p/n$. Because \texttt{Burst\_24h} AD diagnostics were computed from the exported prediction-output subset and then restricted to in-domain formulations, these values are used only for applicability-domain interpretation and are not used to redefine the primary \texttt{Burst\_24h} performance reported in Table~\ref{tab:cv_performance}.}")
 out(r"\label{tab:ad_results}")
 out(r"\begin{tabular}{llcccc}")
 out(r"\toprule")

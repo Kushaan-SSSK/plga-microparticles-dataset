@@ -10,6 +10,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import StackingRegressor
 from sklearn.svm import SVR
+from sklearn.impute import SimpleImputer
 from src.plga_pipeline_v2 import PLGAPrecisionPipeline
 import warnings
 
@@ -72,6 +73,7 @@ def run_benchmarks():
             print(f"  Benchmarking {name}...")
             
             pipe = Pipeline([
+                ('imputer', SimpleImputer(strategy='mean')),
                 ('scaler', StandardScaler()),
                 ('model', model)
             ])

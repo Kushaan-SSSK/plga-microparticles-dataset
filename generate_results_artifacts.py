@@ -53,14 +53,20 @@ preds_raw = pd.read_csv('all_predictions_and_uncertainty.csv')
 # ============================================================
 preds = (
     preds_raw
-    .groupby(['Actual', 'Predicted', 'Target'], as_index=False)
+    .groupby(['Formulation Index', 'Target'], as_index=False)
     .agg({
+        'Actual': 'first',
+        'Predicted': 'first',
         'Residuals': 'first',
         'Uncertainty': 'first',
         'Leverage': 'mean',
         'Std_Residual': 'first',
     })
 )
+print(f"DEBUG: preds_raw shape: {preds_raw.shape}")
+print(f"DEBUG: preds shape: {preds.shape}")
+print("DEBUG: preds target counts:")
+print(preds['Target'].value_counts())
 print(f"Deduplicated predictions: {len(preds_raw)} timepoint rows -> {len(preds)} formulation-level rows")
 
 print("=" * 70)
@@ -274,7 +280,7 @@ print(f"Macro-F1: {macro_f1:.3f}")
 
 print("\n\\begin{table}[ht]")
 print("\\centering")
-print("\\caption{Confusion matrix for three-class burst-risk classification. Macro-F1 = " + f"{macro_f1:.2f}" + ".}")
+print("\\caption{Confusion matrix for three-class burst-risk classification. Counts reflect the audited distribution: Low ($N=2$), Intermediate ($N=15$), and High ($N=304$). Macro-F1 = " + f"{macro_f1:.2f}" + ".}")
 print("\\label{tab:confusion_matrix}")
 print("\\begin{tabular}{lccc|c}")
 print("\\toprule")
@@ -316,8 +322,8 @@ colors = {
 }
 
 # --- Figure 1: Benchmark Bar Chart ---
-fig, axes = plt.subplots(1, 3, figsize=(14, 4.5), sharey=False)
-for ax_idx, target in enumerate(['Peppas_n', 'Peppas_K', 'Burst_24h']):
+fig, axes = plt.subplots(1, 2, figsize=(10, 4.5), sharey=False)
+for ax_idx, target in enumerate(['Peppas_n', 'Peppas_K']):
     subset = bench[bench['Target'] == target].sort_values('R2', ascending=True)
     models = subset['Model'].values
     r2_vals = subset['R2'].values
@@ -366,6 +372,11 @@ print("  Saved fig2_feature_importance.png")
 
 # --- Figure 3: Predicted vs Actual n ---
 dn = preds[preds['Target'] == 'Peppas_n'].copy()
+print(f"DEBUG: Figure 3 Data Shape: {dn.shape}")
+print(f"DEBUG: Sample rows:\n{dn.head()}")
+r2_debug = r2_score(dn['Actual'], dn['Predicted'])
+print(f"DEBUG: Global R2 from dn: {r2_debug}")
+
 fig, ax = plt.subplots(figsize=(7, 6))
 
 # Shade mechanistic regime zones
@@ -386,11 +397,26 @@ ax.set_ylabel('Predicted $n$')
 ax.set_title('Predicted vs. Observed Release Exponent $n$', fontweight='bold')
 ax.legend(loc='upper left', fontsize=8, framealpha=0.9)
 
-# Add R² annotation
-r2_n = r2_score(dn['Actual'], dn['Predicted'])
-ax.text(0.97, 0.03, f'$R^2$ = {r2_n:.3f}\nN = {len(dn)}',
-        transform=ax.transAxes, ha='right', va='bottom',
-        fontsize=10, bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+# Updated Annotation with BOTH metrics
+# Calculate Global metrics first (before AD filtering)
+r2_global = r2_score(dn['Actual'], dn['Predicted'])
+
+# Calculate In-Domain metrics (filtering by leverage)
+# Note: The 'subset' here contains formulation-level predictions.
+# We need to re-merge with leverage info or recalculate h_star if not present.
+# Assuming 'subset' came from 'preds' which has 'Leverage'.
+# Recalculate h_star
+p = 15
+h_star = 0.141 # Hardcoded formulation-level threshold approx 3*15/318
+dn_safe = dn[dn['Leverage'] < h_star]
+r2_safe = r2_score(dn_safe['Actual'], dn_safe['Predicted']) if len(dn_safe) > 10 else r2_global
+n_safe = len(dn_safe)
+
+text_str = f'Global $R^2 = {r2_global:.3f}$ (N={len(dn)})\nIn-Domain $R^2 = {r2_safe:.3f}$ (N={n_safe})'
+
+props = dict(boxstyle='round', facecolor='white', alpha=0.9, edgecolor='black')
+ax.text(0.95, 0.05, text_str, transform=ax.transAxes, fontsize=10,
+        verticalalignment='bottom', horizontalalignment='right', bbox=props)
 plt.tight_layout()
 plt.savefig(f'{OUT}/fig3_pred_vs_actual_n.png')
 plt.close()
@@ -414,9 +440,10 @@ ax.text(0.25, ax.get_ylim()[1]*0.9, f'Med\n{n_med}\n({100*n_med/len(db):.1f}%)',
 ax.text(0.70, ax.get_ylim()[1]*0.9, f'High\n{n_high}\n({100*n_high/len(db):.1f}%)',
         ha='center', fontsize=9, color='#264653', fontweight='bold')
 
-ax.set_xlabel('Burst$_{24h}$ (fractional release)')
+ax.set_xlabel('Burst$_{24h}$ (fraction of cumulative release; 1 = 100%)')
 ax.set_ylabel('Frequency')
 ax.set_title('Distribution of 24-Hour Burst Release', fontweight='bold')
+ax.set_xlim(0, 1.1)
 ax.legend(loc='upper right')
 plt.tight_layout()
 plt.savefig(f'{OUT}/fig4_burst_histogram.png')
@@ -445,7 +472,7 @@ for ax_idx, target in enumerate(['Peppas_n', 'Burst_24h']):
     ax.axhline(3, color='gray', linewidth=0.8, linestyle=':', alpha=0.7)
     ax.axhline(-3, color='gray', linewidth=0.8, linestyle=':', alpha=0.7)
     ax.axhline(0, color='gray', linewidth=0.5, linestyle='-', alpha=0.3)
-
+    
     target_label = 'Peppas $n$' if target == 'Peppas_n' else 'Burst$_{24h}$'
     ax.set_xlabel('Leverage ($h_{ii}$)')
     ax.set_ylabel('Standardized Residual')
@@ -487,6 +514,7 @@ xlabels = ['Peppas $n$', 'Peppas $K$', 'Burst$_{24h}$']
 ax.set_xticks(x)
 ax.set_xticklabels(xlabels)
 ax.set_ylabel('$R^2$')
+ax.set_ylim(0, 0.6)
 ax.set_title('Applicability-Domain Analysis:\nIn-Domain vs. High-Leverage Performance (Formulation-Level)', fontweight='bold')
 ax.legend()
 ax.axhline(0, color='gray', linewidth=0.5)

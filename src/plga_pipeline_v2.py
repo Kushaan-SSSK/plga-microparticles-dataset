@@ -66,7 +66,7 @@ class PLGAPrecisionPipeline:
         # initial_df has SMILES
         if 'Drug SMILES' in self.initial_df.columns:
             formulation_params = formulation_params.merge(
-                self.initial_df[['Formulation Index', 'Drug SMILES']], 
+                self.initial_df[['Formulation Index', 'Drug SMILES']].drop_duplicates(subset='Formulation Index'), 
                 on='Formulation Index', 
                 how='left'
             )
@@ -102,7 +102,7 @@ class PLGAPrecisionPipeline:
         if 'Polymer MW' not in formulation_params.columns:
              if 'Polymer Mw' in self.initial_df.columns:
                   # Merge it in
-                  formulation_params = formulation_params.merge(self.initial_df[['Formulation Index', 'Polymer Mw']], on='Formulation Index')
+                  formulation_params = formulation_params.merge(self.initial_df[['Formulation Index', 'Polymer Mw']].drop_duplicates(subset='Formulation Index'), on='Formulation Index')
                   formulation_params['Polymer MW'] = formulation_params['Polymer Mw']
         
         # Clean MW
@@ -122,7 +122,7 @@ class PLGAPrecisionPipeline:
         grouped = self.raw_df.groupby('Formulation Index')
         
         for idx, group in grouped:
-            if len(group) < 5: continue # Filter < 5 points
+            if len(group) < 3: continue # Filter < 3 points
             
             group = group.sort_values('Time')
             t = group['Time'].values
@@ -138,43 +138,38 @@ class PLGAPrecisionPipeline:
                 
             # Korsmeyer-Peppas: Mt/Minf = K * t^n
             # Fit to first 60% release
-            mask = y < 60
-            if mask.sum() < 3: # Need points for fit
-                # Fallback: fit all if max < 60, or take first N
+            mask = y <= 0.60
+            n, K = np.nan, np.nan
+            
+            if mask.sum() < 3:
                 if len(y) >= 3:
                     t_fit = t[:5]
                     y_fit = y[:5]
                 else:
-                    continue
+                    t_fit = np.array([])
+                    y_fit = np.array([])
             else:
                 t_fit = t[mask]
                 y_fit = y[mask]
                 
-            # Log-Log Fit: log(Q) = log(K) + n*log(t)
-            # Avoid t=0, y=0
             valid = (t_fit > 0) & (y_fit > 0)
-            t_log = np.log(t_fit[valid])
-            y_log = np.log(y_fit[valid])
-            
-            if len(t_log) < 3: continue
-            
-            try:
-                slope, intercept = np.polyfit(t_log, y_log, 1)
-                n = slope
-                K = np.exp(intercept)
+            if valid.sum() >= 3:
+                t_log = np.log(t_fit[valid])
+                y_log = np.log(y_fit[valid])
                 
-                # Bounds check (Physical limits)
-                # n usually 0 to 1. K > 0.
-                if n < 0 or n > 2: n = np.nan # Outlier
-                    
-                results.append({
-                    'Formulation Index': idx,
-                    'Peppas_n': n,
-                    'Peppas_K': K,
-                    'Burst_24h': burst_24
-                })
-            except:
-                continue
+                try:
+                    slope, intercept = np.polyfit(t_log, y_log, 1)
+                    n = slope
+                    K = np.exp(intercept)
+                except:
+                    pass
+                        
+            results.append({
+                'Formulation Index': idx,
+                'Peppas_n': n,
+                'Peppas_K': K,
+                'Burst_24h': burst_24
+            })
                 
         target_df = pd.DataFrame(results)
         print("DEBUG: target_df shape:", target_df.shape)
@@ -239,6 +234,7 @@ class PLGAPrecisionPipeline:
             all_pred = []
             all_std = []
             all_indices = []
+            all_groups = []
             
             # Manual CV Loop for Uncertainty
             for train_idx, test_idx in gkf.split(X_curr, y_curr, groups=groups_curr):
@@ -283,7 +279,8 @@ class PLGAPrecisionPipeline:
                 all_actual.extend(y_test)
                 all_pred.extend(preds)
                 all_std.extend(ensemble_std)
-                all_indices.extend(test_idx) # Keep track? Not strictly needed if sequential, but good for debug
+                all_indices.extend(test_idx) 
+                all_groups.extend(groups_curr[test_idx])
                 
             # Metrics
             all_actual = np.array(all_actual)
@@ -299,6 +296,7 @@ class PLGAPrecisionPipeline:
             metrics_list.append({'Target': target, 'R2': r2, 'MAE': mae, 'RMSE': rmse})
             
             self.results[target] = pd.DataFrame({
+                'Formulation Index': all_groups,
                 'Actual': all_actual,
                 'Predicted': all_pred,
                 'Residuals': all_actual - all_pred,
@@ -336,11 +334,10 @@ class PLGAPrecisionPipeline:
 
         
         y_class = np.zeros_like(y_b_val, dtype=int)
-        y_class[(y_b_val >= 10) & (y_b_val < 40)] = 1
-        y_class[y_b_val >= 40] = 2
+        y_class[y_b_val > 0.20] = 1
         
         clf = xgb.XGBClassifier(n_estimators=200, max_depth=6, learning_rate=0.05, n_jobs=-1, 
-                                use_label_encoder=False, objective='multi:softprob', num_class=3, eval_metric='mlogloss')
+                                use_label_encoder=False, objective='binary:logistic', eval_metric='logloss')
         
         # Cross val
         class_preds = cross_val_predict(clf, X_b, y_class, cv=gkf, groups=groups_b)
@@ -349,10 +346,16 @@ class PLGAPrecisionPipeline:
         acc = accuracy_score(y_class, class_preds)
         print(f"    Burst Classification Accuracy: {acc:.3f}")
         
+        cm = confusion_matrix(y_class, class_preds)
+        with open('burst_confusion_matrix.txt', 'w') as f:
+            f.write(str(cm))
+            f.write('\nAccuracy: ' + str(acc))
+            
         self.results['Burst_Class'] = {
+            'Formulation Index': groups_b,
             'Actual': y_class,
             'Predicted': class_preds,
-            'ConfusionMatrix': confusion_matrix(y_class, class_preds)
+            'ConfusionMatrix': cm
         }
         metrics_list.append({'Target': 'Burst_Class', 'R2': np.nan, 'MAE': np.nan, 'RMSE': np.nan, 'Accuracy': acc})
 
@@ -487,6 +490,9 @@ class PLGAPrecisionPipeline:
         
         imp_df = pd.DataFrame({'Feature': feature_cols, 'Importance': importances}).sort_values('Importance', ascending=False).head(10)
         
+        # Save for downstream figure generation
+        imp_df.to_csv('Table1_MIADR.csv', index=False)
+        
         plt.figure(figsize=(10, 8))
         sns.barplot(data=imp_df, x='Importance', y='Feature', palette='viridis')
         plt.title('Top 10 Drivers of Release Mechanism (n)')
@@ -560,6 +566,7 @@ if __name__ == "__main__":
         elif isinstance(res, dict) and 'Actual' in res:
              # Convert Burst dict to DF
              df = pd.DataFrame({
+                 'Formulation Index': res.get('Formulation Index', []),
                  'Actual': res['Actual'],
                  'Predicted': res['Predicted']
              })
