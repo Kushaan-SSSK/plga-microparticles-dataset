@@ -152,9 +152,11 @@ class PLGAPrecisionPipeline:
         """Compute Peppas_n, Peppas_K, Burst_24h from release curves (Korsmeyer-Peppas fit; time in hours)."""
         logger.info("STEP 2: Target Engineering (Mechanistic)...")
         release_series = self.raw_df["Release"].dropna()
-        if not release_series.empty and release_series.max() > 1.0 + 1e-6:
+        if not release_series.empty and (
+            release_series.min() < -1e-6 or release_series.max() > 1.0 + 1e-6
+        ):
             raise ValueError(
-                "Release must be fraction-scale (0-1). Detected values above 1.0; "
+                "Release must be fraction-scale (0-1). Detected values outside [0, 1]; "
                 "normalize release values before running this pipeline."
             )
         results = []
@@ -245,7 +247,7 @@ class PLGAPrecisionPipeline:
         )
         
     def train_and_validate(self) -> None:
-        """10-fold group CV, mean imputation per fold, stacking; burst binary classification."""
+        """10-fold GroupKFold CV, mean imputation per fold, stacking; burst binary classification."""
         logger.info("STEP 3b: Training & Validation (10-Fold Grouped)...")
         feature_cols = FEATURE_COLS
         X = self.df[feature_cols].copy().values
