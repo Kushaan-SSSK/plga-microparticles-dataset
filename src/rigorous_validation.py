@@ -82,18 +82,15 @@ def rigorous_validation(raw_path: str, initial_path: str, output_dir: Optional[s
     y_test_b = y_test_val[test_mask]
     
     def get_classes(y):
-        y_class = np.zeros_like(y, dtype=int)
-        y_class[(y >= 10) & (y < 40)] = 1
-        y_class[y >= 40] = 2
-        return y_class
+        return (y > 0.20).astype(int)
         
     y_train_cls = get_classes(y_train_b)
     y_test_cls = get_classes(y_test_b)
     logger.info("Training Burst Classifier on %d samples...", len(y_train_cls))
     clf = xgb.XGBClassifier(
         n_estimators=200, max_depth=6, learning_rate=0.05, n_jobs=-1,
-        use_label_encoder=False, objective="multi:softprob", num_class=3,
-        eval_metric="mlogloss", random_state=RANDOM_SEED,
+        use_label_encoder=False, objective="binary:logistic",
+        eval_metric="logloss", random_state=RANDOM_SEED,
     )
     clf.fit(X_train_b, y_train_cls)
     

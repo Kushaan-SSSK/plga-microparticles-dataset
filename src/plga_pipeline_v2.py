@@ -156,7 +156,7 @@ class PLGAPrecisionPipeline:
         grouped = self.raw_df.groupby('Formulation Index')
         
         for idx, group in grouped:
-            if len(group) < 5: continue # Filter < 5 points
+            if len(group) < 3: continue # Filter < 3 points
             
             group = group.sort_values('Time')
             t = group['Time'].values
@@ -171,8 +171,8 @@ class PLGAPrecisionPipeline:
                 burst_24 = np.nan
                 
             # Korsmeyer-Peppas: Mt/Minf = K * t^n
-            # Fit to first 60% release
-            mask = y < 60
+            # Fit to first 60% release (fractional release scale: 0-1)
+            mask = y <= 0.60
             if mask.sum() < 3: # Need points for fit
                 # Fallback: fit all if max < 60, or take first N
                 if len(y) >= 3:
@@ -239,7 +239,7 @@ class PLGAPrecisionPipeline:
         )
         
     def train_and_validate(self) -> None:
-        """10-fold group CV, mean imputation per fold, stacking; burst 3-class classification."""
+        """10-fold group CV, mean imputation per fold, stacking; burst binary classification."""
         logger.info("STEP 3b: Training & Validation (10-Fold Grouped)...")
         feature_cols = FEATURE_COLS
         X = self.df[feature_cols].copy().values
@@ -311,7 +311,7 @@ class PLGAPrecisionPipeline:
                 all_actual.extend(y_test)
                 all_pred.extend(preds)
                 all_std.extend(ensemble_std)
-                all_indices.extend(test_idx) # Keep track? Not strictly needed if sequential, but good for debug
+                all_indices.extend(groups_curr[test_idx])
                 
             # Metrics
             all_actual = np.array(all_actual)
@@ -326,6 +326,7 @@ class PLGAPrecisionPipeline:
             metrics_list.append({'Target': target, 'R2': r2, 'MAE': mae, 'RMSE': rmse})
             
             self.results[target] = pd.DataFrame({
+                'Formulation Index': np.array(all_indices),
                 'Actual': all_actual,
                 'Predicted': all_pred,
                 'Residuals': all_actual - all_pred,
@@ -342,7 +343,7 @@ class PLGAPrecisionPipeline:
             self.models[target] = final_pipe
 
         logger.info("  - Running Burst Classification...")
-        # Create Classes: Low (<10), Med (10-40), High (>40)
+        # Create Classes (binary): Low (<=0.20), High (>0.20)
         burst_y = self.df['Burst_24h'].copy()
         # Drop NaNs
         # Drop NaNs
@@ -361,14 +362,12 @@ class PLGAPrecisionPipeline:
         X_b = imp_b.fit_transform(X_b)
 
         
-        y_class = np.zeros_like(y_b_val, dtype=int)
-        y_class[(y_b_val >= 10) & (y_b_val < 40)] = 1
-        y_class[y_b_val >= 40] = 2
+        y_class = (y_b_val > 0.20).astype(int)
         
         clf = xgb.XGBClassifier(
             n_estimators=200, max_depth=6, learning_rate=0.05, n_jobs=-1,
-            use_label_encoder=False, objective="multi:softprob", num_class=3,
-            eval_metric="mlogloss", random_state=RANDOM_SEED,
+            use_label_encoder=False, objective="binary:logistic",
+            eval_metric="logloss", random_state=RANDOM_SEED,
         )
         class_preds = cross_val_predict(clf, X_b, y_class, cv=gkf, groups=groups_b)
         from sklearn.metrics import accuracy_score, confusion_matrix
@@ -376,16 +375,17 @@ class PLGAPrecisionPipeline:
         logger.info("    Burst Classification Accuracy: %.3f", acc)
         
         self.results['Burst_Class'] = {
+            'Formulation Index': groups_b,
             'Actual': y_class,
             'Predicted': class_preds,
-            'ConfusionMatrix': confusion_matrix(y_class, class_preds)
+            'ConfusionMatrix': confusion_matrix(y_class, class_preds, labels=[0, 1])
         }
         metrics_list.append({'Target': 'Burst_Class', 'R2': np.nan, 'MAE': np.nan, 'RMSE': np.nan, 'Accuracy': acc})
 
         final_clf = xgb.XGBClassifier(
             n_estimators=200, max_depth=6, learning_rate=0.05, n_jobs=-1,
-            use_label_encoder=False, objective="multi:softprob", num_class=3,
-            eval_metric="mlogloss", random_state=RANDOM_SEED,
+            use_label_encoder=False, objective="binary:logistic",
+            eval_metric="logloss", random_state=RANDOM_SEED,
         )
         final_clf.fit(X_b, y_class)
         self.models["Burst_Class"] = final_clf
@@ -570,7 +570,14 @@ def run_pipeline(raw_path: str, initial_path: str, output_dir: str) -> None:
             df["Target"] = target
             all_res.append(df)
         elif isinstance(res, dict) and "Actual" in res:
-            df = pd.DataFrame({"Actual": res["Actual"], "Predicted": res["Predicted"], "Target": target})
+            df_data = {
+                "Actual": res["Actual"],
+                "Predicted": res["Predicted"],
+                "Target": target,
+            }
+            if "Formulation Index" in res:
+                df_data["Formulation Index"] = res["Formulation Index"]
+            df = pd.DataFrame(df_data)
             all_res.append(df)
     if all_res:
         pd.concat(all_res).to_csv(out / "all_predictions_and_uncertainty.csv", index=False)
