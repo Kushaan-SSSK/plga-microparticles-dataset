@@ -41,6 +41,7 @@ The dataset is **not included** in this repository (e.g. for redistribution/lice
    If the downloaded files use different names, rename them to the above (or adjust `config.py`).
 
 4. Ensure `Time` in the processed file is in **hours** (Burst_24h is release at 24 h).
+5. Ensure `Release` is on a **fraction scale (0–1)**. The pipeline fits Peppas on the first 60% using `Release <= 0.60`.
 
 All scripts and the pipeline use the path **`data/`** for data files (via `config.DATA_DIR`). You can override it with the `DATA_DIR` environment variable or `--data-dir` when running `scripts/run_all.py`.
 
@@ -80,6 +81,13 @@ Generated under `outputs/`:
 | `Figure5_BurstImportance.png` | Drivers of burst (safety) |
 | `Figure6_AD_Paradox.png` | R² in safe vs high-leverage zones |
 | (full run) `Figure4_UncertaintyCalibration.png`, `Figure5_BurstClassification.png`, `Figure6_Benchmarking.png`, `benchmark_results.csv` | Extra figures and benchmark table |
+
+### Result definition notes
+
+- Target engineering includes formulations with at least **3** release points.
+- Peppas fitting uses only points with **`Release <= 0.60`** (fraction-scale release).
+- Burst classification is **binary**: class 0 for `Burst_24h <= 0.20`, class 1 for `Burst_24h > 0.20`.
+- `all_predictions_and_uncertainty.csv` includes **Formulation Index** for traceability.
 
 ---
 

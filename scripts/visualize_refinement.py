@@ -46,12 +46,12 @@ def main(output_dir: Optional[str] = None) -> None:
     df_b = preds[preds["Target"] == "Burst_Class"].copy()
     if not df_b.empty:
         plt.figure(figsize=(6, 5))
-        cm = confusion_matrix(df_b["Actual"], df_b["Predicted"])
+        cm = confusion_matrix(df_b["Actual"], df_b["Predicted"], labels=[0, 1])
         cmn = cm.astype("float") / (cm.sum(axis=1)[:, np.newaxis] + 1e-9)
         sns.heatmap(
             cmn, annot=True, fmt=".2f", cmap="Blues",
-            xticklabels=["Low (<10%)", "Med", "High (>40%)"],
-            yticklabels=["Low", "Med", "High"],
+            xticklabels=["Low (<=0.20)", "High (>0.20)"],
+            yticklabels=["Low", "High"],
         )
         plt.title("Burst Release Classification Accuracy")
         plt.xlabel("Predicted Class")
