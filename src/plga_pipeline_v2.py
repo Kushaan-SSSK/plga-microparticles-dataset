@@ -164,7 +164,7 @@ class PLGAPrecisionPipeline:
         grouped = self.raw_df.groupby('Formulation Index')
         
         for idx, group in grouped:
-            if len(group) < 3: continue # Filter < 3 points
+            if len(group) < 3: continue # Skip formulations with fewer than 3 points
             
             group = group.sort_values('Time')
             t = group['Time'].values
@@ -353,7 +353,6 @@ class PLGAPrecisionPipeline:
         logger.info("  - Running Burst Classification...")
         # Create Classes (binary): Low (<=0.20), High (>0.20)
         burst_y = self.df['Burst_24h'].copy()
-        # Drop NaNs
         # Drop NaNs
         valid_b = burst_y.notna()
         # Note: X already has NaNs now, need to handle them. 
