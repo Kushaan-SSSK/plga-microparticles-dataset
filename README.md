@@ -1,42 +1,61 @@
-# Quantifying the Data Ceiling: A Mechanistic-ML Evaluation of PLGA Microparticles
+# Diagnosing Predictability Limits of PLGA Microparticle Release
 
-**Status:** Validated Diagnostic Study
-**Key Outcome:** 100% Safety Classification Accuracy despite low quantitative predictability.
+This repository contains the reproducibility workflow for the manuscript
+`Diagnosing Predictability Limits of In Vitro Drug Release from Published PLGA Microparticle Data`.
 
-## Abstract
-This project evaluates the limits of Machine Learning in predicting the release characteristics of PLGA microparticles from heterogeneous literature data. While exact quantitative prediction of release rates is limited by manufacturing variability ($R^2 \approx 0.35$), we demonstrate that ML is highly effective at **Safety Classification**, achieving **100% accuracy** in predicting Burst Release failures. furthermore, our Applicability Domain analysis reveals an "Island of Predictability" paradox, where outlier formulations often yield higher predictability than the global average, highlighting specific well-controlled sub-domains within the literature.
+The study evaluates how well commonly reported literature covariates predict PLGA microparticle release behavior. The current analysis is framed as a diagnostic of reporting and transportability limits, not as a deployable high-performance prediction engine.
 
-## Key Findings (The "Data Ceiling")
+## Current Analysis State
 
-### 1. Safety Profiling is Solved
-Feature engineering successfully isolates high-risk "Burst Release" (>40%) formulations from safe ones (<10%).
-*   **Accuracy:** 1.000 (Validated with strict leakage-free 80/20 split)
-*   **Driver:** Physical chemistry descriptors (MolLogP, Polymer MW) create clear separation boundaries.
+- Dataset: 321 PLGA microparticle formulations from 113 publications, 89 drugs, and 4,913 release observations.
+- Peppas modeling subset: 300 paired `n`/`K` rows.
+- Burst endpoint: `Burst_24h` regression on 321 formulations.
+- Burst-risk classification: binary threshold at `Burst_24h = 0.20`.
+- Validation: grouped 10-fold cross-validation by `Formulation Index` and leave-one-study-out validation by DOI.
 
-### 2. The Applicability Domain Paradox
-Contrary to standard assumption, the "Safe Zone" (low leverage) of the Applicability Domain is *less* predictable ($R^2 \approx 0.35$) than the "High Leverage" zone ($R^2 > 0.70$).
-*   **Interpretation:** "Outliers" in this dataset likely represent consistent, high-quality specific studies, while the "Average" represents the noisy, conflicting bulk of aggregated literature.
+## Headline Results
 
-## Repository Structure
-*   `src/plga_pipeline_v2.py`: Main production pipeline (Feature Engineering -> Stacked Ensemble -> AD Analysis).
-*   `src/rigorous_validation.py`: Validation script proving the 100% accuracy is not coverage/leakage.
-*   `performance_metrics.csv`: Detailed model performance.
-*   `all_predictions_and_uncertainty.csv`: Model predictions with uncertainty quantification.
+Grouped 10-fold CV, stacked ensemble:
 
-## Running the Pipeline
+| Target | N | R2 | MAE | RMSE |
+|---|---:|---:|---:|---:|
+| Peppas n | 300 | 0.156 | 0.306 | 0.420 |
+| Peppas K | 300 | 0.169 | 0.140 | 0.185 |
+| Burst_24h | 321 | 0.100 | 0.144 | 0.186 |
+
+Leave-one-study-out validation:
+
+| Target | R2 | MAE | RMSE |
+|---|---:|---:|---:|
+| Peppas n | -0.061 | 0.363 | 0.498 |
+| Peppas K | -0.040 | 0.142 | 0.179 |
+| Burst_24h | -0.180 | 0.202 | 0.245 |
+
+Burst-risk classification under the binary 20% threshold is strongly imbalanced: 5 low/moderate-burst formulations and 316 high-burst formulations. The classifier predicts the majority class across folds, giving accuracy 0.984 and macro-F1 0.496.
+
+## Repository Contents
+
+- `src/`: modeling and data-processing code.
+- `scripts/`: supporting analysis and figure/table generation scripts.
+- `performance_metrics.csv`: grouped-CV stacked-ensemble metrics.
+- `benchmark_results_with_rmse.csv`: benchmark model metrics with RMSE.
+- `loso_results.csv`: pooled leave-one-study-out metrics.
+- `all_predictions_and_uncertainty.csv`: out-of-fold predictions, uncertainty proxy, and leverage diagnostics.
+- `PLGA_Paper/`: manuscript, figures, references, and supplementary files used for submission.
+
+## Data Access
+
+The source dataset is not redistributed here. Download the dataset from Mendeley Data:
+
+https://doi.org/10.17632/zzvtdrcy76.2
+
+Place the required Excel files in the repository root or configure the data paths in the scripts before running the workflow.
+
+## Running the Workflow
+
 ```bash
-# Install dependencies
 pip install -r requirements.txt
-
-# Run the full pipeline (generates all figures)
 python src/plga_pipeline_v2.py
-
-# Run the strict validation check
-python -m src.rigorous_validation
 ```
 
-## Figures
-*   **Figure 1:** Mechanism Map (Fickian vs Case II)
-*   **Figure 2:** Applicability Domain (Williams Plot)
-*   **Figure 5:** Drivers of Burst Release (Feature Importance)
-*   **Figure 6:** The AD Paradox (Safe vs Unsafe R2)
+Some manuscript figures and audit tables are generated by supporting scripts in `scripts/` and `scratch/`. The manuscript PDF in `PLGA_Paper/` is the synchronized submission version.

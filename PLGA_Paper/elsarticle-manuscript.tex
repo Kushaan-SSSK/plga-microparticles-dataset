@@ -1,0 +1,789 @@
+%% 
+%% Copyright 2007-2025 Elsevier Ltd
+%% 
+%% This file is part of the 'Elsarticle Bundle'.
+%% ---------------------------------------------
+%% 
+%% It may be distributed under the conditions of the LaTeX Project Public
+%% License, either version 1.3 of this license or (at your option) any
+%% later version.  The latest version of this license is in
+%%    http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 1999/12/01 or later.
+%% 
+%% The list of all files belonging to the 'Elsarticle Bundle' is
+%% given in the file `manifest.txt'.
+%% 
+%% Template article for Elsevier's document class `elsarticle'
+%% with harvard style bibliographic references
+
+\documentclass[preprint,12pt,authoryear]{elsarticle}
+
+%% Use the option review to obtain double line spacing
+%% \documentclass[authoryear,preprint,review,12pt]{elsarticle}
+
+%% Use the options 1p,twocolumn; 3p; 3p,twocolumn; 5p; or 5p,twocolumn
+%% for a journal layout:
+%% \documentclass[final,1p,times,authoryear]{elsarticle}
+%% \documentclass[final,1p,times,twocolumn,authoryear]{elsarticle}
+%% \documentclass[final,3p,times,authoryear]{elsarticle}
+%% \documentclass[final,3p,times,twocolumn,authoryear]{elsarticle}
+%% \documentclass[final,5p,times,authoryear]{elsarticle}
+%% \documentclass[final,5p,times,twocolumn,authoryear]{elsarticle}
+
+%% For including figures, graphicx.sty has been loaded in
+%% elsarticle.cls. If you prefer to use the old commands
+%% please give \usepackage{epsfig}
+
+%% The amssymb package provides various useful mathematical symbols
+\usepackage{amssymb}
+%% The amsmath package provides various useful equation environments.
+\usepackage{amsmath}
+\biboptions{authoryear}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{graphicx}
+\usepackage{lmodern}
+\graphicspath{{Figure/}}
+\usepackage{placeins}
+\usepackage[hidelinks]{hyperref}
+\pdfstringdefDisableCommands{%
+  \def\corref#1{}%
+  \def\cnotenum#1{}%
+  \def\@corref#1{}%
+  \def\fnref#1{}%
+  \def\fntext#1{}%
+  \def\tnoteref#1{}%
+  \def\tnotetext#1{}%
+}
+
+\usepackage{array}
+\usepackage{ragged2e}
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage{siunitx}
+\usepackage{makecell}
+
+\sisetup{
+  reset-text-series = false,
+  text-series-to-math = true,
+  reset-text-family = false,
+  text-family-to-math = true,
+  table-number-alignment=center,
+  table-format = 4.2
+}
+
+\newcolumntype{P}[1]{>{\RaggedRight\arraybackslash\hspace{0pt}}p{#1}}
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+
+
+
+
+
+\journal{International Journal of Pharmaceutics}
+
+\begin{document}
+
+\begin{frontmatter}
+%\begin{graphicalabstract}
+%%\includegraphics[width=\textwidth,height=0.6\textheight,keepaspectratio]{GraphicalAbstract}
+%\end{graphicalabstract}
+\title{Diagnosing Predictability Limits of In Vitro Drug Release from Published PLGA Microparticle Data}
+
+%% Anonymized Authors for Review
+%% Authors
+\author[aff1]{Kushaan Sharma\corref{cor1}}
+\ead{kushaan.s2007@utexas.edu}
+
+\author[aff2]{Aryan Shah}
+\author[aff3]{Syna Sharma}
+\author[aff4]{Shreyan Shah}
+\author[aff5]{Mansoor A. Khan}
+\author[aff6]{Mariame Ali}
+
+\cortext[cor1]{Corresponding author}
+
+%% Affiliations
+\affiliation[aff1]{
+  organization={The University of Texas at Austin},
+  addressline={2515 Speedway},
+  city={Austin},
+  state={TX},
+  postcode={78712},
+  country={USA}
+}
+
+\affiliation[aff2]{
+  organization={Texas A\&M University},
+  addressline={400 Bizzell St},
+  city={College Station},
+  state={TX},
+  postcode={77840},
+  country={USA}
+}
+
+\affiliation[aff3]{
+  organization={University of the Incarnate Word School of Osteopathic Medicine},
+  addressline={7615 Kennedy Hill Dr},
+  city={San Antonio},
+  state={TX},
+  postcode={78235},
+  country={USA}
+}
+
+\affiliation[aff4]{
+  organization={William P. Clements High School},
+  addressline={4200 Elkins Rd},
+  city={Sugar Land},
+  state={TX},
+  postcode={77479},
+  country={USA}
+}
+
+\affiliation[aff5]{
+  organization={Irma Lerma Rangel College of Pharmacy, Texas A\&M University},
+  addressline={159 Reynolds Medical Building, Mail Stop 1114},
+  city={College Station},
+  state={TX},
+  postcode={77843},
+  country={USA}
+}
+
+\affiliation[aff6]{
+  organization={Department of Pharmaceutical Sciences, School of Pharmacy, Texas A\&M University},
+  addressline={206 Olsen Blvd., MS 1114},
+  city={College Station},
+  state={TX},
+  postcode={77843},
+  country={USA}
+}
+
+\begin{abstract}
+Polylactic-co-glycolic acid (PLGA) microparticles are widely used for sustained drug delivery, yet the release behavior reported in the literature remains difficult to predict across studies. We hypothesized that this limitation reflects insufficient information content in commonly reported formulation variables rather than model inadequacy. We analyzed a curated dataset of 321 PLGA microparticle formulations from 113 publications comprising 89 drugs and 4,913 release observations. Early-time release was parameterized using Korsmeyer--Peppas descriptors ($n$, $K$), and burst release was quantified as the 24-hour cumulative release. Machine learning models were evaluated using formulation-grouped cross-validation, applicability-domain analysis, and leave-one-study-out validation to assess cross-laboratory transportability. Under formulation-grouped validation, predictability was limited (stacked ensemble: $R^2=0.156$ for $n$, $R^2=0.169$ for $K$, burst $R^2=0.100$). Leave-one-study-out validation yielded negative pooled $R^2$ values for all targets ($-0.061$, $-0.040$, and $-0.180$, respectively), indicating failure to generalize across laboratories. Applicability-domain filtering did not materially improve performance, supporting the interpretation that prediction is limited by missing or inconsistently reported variables rather than covariate extrapolation alone. These results reveal an information-limited regime in PLGA release prediction in which literature covariates enable only weak formulation-level prediction under grouped validation and cannot support transferable models. We therefore propose minimum reporting priorities, including standardized characterization of polymer molecular weight, end-group chemistry, quantitative emulsification and solvent-removal parameters, and microstructural or porosity measurements, to enable reproducible formulation screening.
+\end{abstract}
+
+
+
+\begin{keyword}
+PLGA microparticles \sep drug release \sep burst release \sep machine learning \sep applicability domain \sep Korsmeyer--Peppas
+\end{keyword}
+
+\end{frontmatter}
+
+\section{Introduction}
+
+Poly(lactic-co-glycolic acid) (PLGA) microparticles are among the most widely studied biodegradable carriers for sustained drug delivery and have become a foundational platform in controlled-release formulation research \citep{MakadiaSiegel2011, FreibergZhu2004}. The appeal of PLGA systems stems from their biodegradability and tunable release behavior, which can reduce dosing frequency and help maintain therapeutic exposure over extended periods \citep{MakadiaSiegel2011, Fredenberg2011}. Despite this maturity, formulation development for PLGA microparticles remains heavily empirical because drug release is shaped by multiple coupled factors that vary across laboratories and manufacturing routes \citep{Fredenberg2011, Jain2000}. As a result, ostensibly similar PLGA systems can exhibit substantially different release profiles, complicating translation and slowing rational design \citep{Fredenberg2011}.
+
+Mechanistically, release from PLGA matrices reflects an interplay of drug diffusion, polymer hydration and degradation, pore formation, and erosion, with the relative contributions evolving over time \citep{Fredenberg2011}. Polymer composition (e.g., lactic:glycolic ratio), molecular weight, and end-group chemistry influence water uptake and hydrolysis kinetics, which, in turn, modulate microstructure development and release rates \citep{MakadiaSiegel2011, Fredenberg2011}. In parallel, micro- and meso-scale morphology, including particle size, porosity, and drug spatial distribution, strongly impacts early-time release and the transition to degradation-controlled regimes \citep{Fredenberg2011}. Critically, many of these morphological attributes are not independent material properties: they are created during manufacturing. Common preparation methods (e.g., emulsion-based routes) can yield different internal structures depending on solvent choice, surfactant conditions, mixing and emulsification energy, and solvent removal dynamics \citep{Jain2000}. Consequently, process parameters can act as dominant drivers of between-study variability, particularly when they are not reported in a standardized way \citep{Jain2000, Fredenberg2011}.
+
+A particularly important manifestation of this variability is \emph{burst release}, the rapid early-time release of a fraction of the drug, often associated with surface-localized payload and connected pore networks \citep{Yoo2020Burst}. Burst behavior is frequently treated as a critical quality attribute in PLGA microparticle development because it can shape initial exposure and safety margins, even when long-term release remains acceptable \citep{Yoo2020Burst, ICHQ8R2}. However, burst is also highly sensitive to formulation microstructure and measurement conditions, making it challenging to compare across studies without careful standardization \citep{Yoo2020Burst, Fredenberg2011}. Even the \emph{in vitro} release protocol can measurably influence the observed profile; for example, maintaining perfect sink conditions may alter PLGA degradation behavior and thereby affect release kinetics \citep{Klose2011Sink}. These experimental dependencies connect directly to broader challenges in establishing robust in vitro--in vivo relationships for complex non-oral drug products \citep{ShenBurgess2015}.
+
+To manage complexity and improve interpretability, PLGA release is often summarized using mechanistic or semi-empirical models. In the early-time regime, the Korsmeyer--Peppas power law is widely used to describe release behavior compactly and to provide parameters that can be compared across systems within a defined validity window \citep{Korsmeyer1983, RitgerPeppas1987}. While PLGA release can involve multiple overlapping physical processes, parameterized targets can be useful in practice because they translate heterogeneous time-series curves into a small set of interpretable descriptors \citep{Fredenberg2011}. Such targets can also support decision-making consistent with quality-by-design (QbD) frameworks, where the goal is not only prediction but also identification of controllable drivers and risk-relevant regimes \citep{ICHQ8R2}.
+
+In parallel, machine learning (ML) is increasingly used to accelerate formulation development by learning nonlinear relationships between composition, process, and performance from experimental data \citep{Bannigan2021}. When datasets are information-rich and generated under standardized protocols, ML models have demonstrated utility for polymeric long-acting injectables and related controlled-release systems \citep{Bannigan2023LAI}. In this context, predictive accuracy itself is not the primary objective; rather, model behavior is used to interrogate the information content of reported formulation variables. Recent perspective work has also highlighted how ML could help navigate the design space and development bottlenecks for polymer microparticles in long-acting injectable contexts \citep{Bao2025IJP}. However, a key failure mode arises when models are trained on datasets derived from the published literature: the published record often omits or inconsistently reports critical process variables that determine microstructure (and therefore release), creating latent confounders that cap achievable performance \citep{Jain2000, Fredenberg2011}. In this setting, predictive performance may plateau at a finite level: models can capture reproducible structure, yet additional algorithmic complexity fails to substantially improve accuracy because the available covariates incompletely describe the microstructure-defining processes. Thus, limited performance does not imply that PLGA release is inherently unpredictable, but rather that the published feature space may be insufficient to support fully quantitative prediction.
+
+
+This motivates a shift in how ML is used on PLGA release data derived from the published literature. Rather than treating model performance as the final objective, ML can be used as an \emph{instrument} to diagnose the limits of predictability imposed by reporting practices and study heterogeneity. A complementary concept from quantitative structure--activity relationship (QSAR) modeling is the \emph{applicability domain} (AD), which characterizes where a model is expected to be reliable based on the similarity of new points to the training data \citep{OECD2004QSAR, Netzeva2005AD}. In practice, leverage-based diagnostics (often visualized via Williams plots) are a common approach to flag potentially out-of-domain predictions and interpret residual behavior \citep{WeaverGleeson2008}. In heterogeneous datasets derived from the published literature, AD analysis can also be viewed as a map of the data manifold: it can test for subdomains where the literature is internally consistent enough to support stronger learning, even if global prediction remains limited \citep{Netzeva2005AD, WeaverGleeson2008}.
+
+In this work, we utilized a previously curated, literature-derived dataset of 321 PLGA microparticle release profiles to quantify the predictive ceiling attainable from commonly reported variables. We parameterize early-time release using Korsmeyer--Peppas descriptors \citep{Korsmeyer1983, RitgerPeppas1987} and quantify 24-hour burst behavior \citep{Yoo2020Burst}, then evaluate prediction under formulation-grouped validation to avoid within-formulation leakage. Finally, we apply applicability-domain analysis to partition the dataset and assess the uniformity of model reliability across the domain \citep{OECD2004QSAR, WeaverGleeson2008, Netzeva2005AD}. By framing ML as a diagnostic tool for the information content of the published record, the study provides concrete guidance on which experimental and process variables should be reported more consistently to improve predictability and to support risk-focused screening aligned with QbD principles \citep{ICHQ8R2}.
+
+\section{Materials and methods}
+
+\subsection{Dataset source and composition}
+This study used a structured dataset of poly(lactic-\emph{co}-glycolic acid) (PLGA) microparticle drug-release profiles and formulation descriptors derived from a prior systematic literature review (see Supplementary Table S1 for the full list of DOIs). In the original report, 1{,}231 records were screened, and 113 studies were included, yielding 321 unique formulations across 89 drugs and 4{,}913 release observations (5--48 time points per formulation; average $\sim$15). Each release observation corresponds to a single row indexed by a \textit{Formulation Index} and a sampling time (\texttt{Time}), with an associated cumulative release value (\texttt{Release}).
+
+
+The dataset focuses on stand-alone PLGA microparticles/microspheres with an \textit{in vitro} cumulative release curve (minimum five reported time points), known drug identity (including SMILES for descriptor computation), and sufficient formulation metadata (e.g., polymer molecular weight, LA: GA ratio, particle size, loading/encapsulation). Studies were excluded when release was reported only \textit{in vivo}, when systems were composite/hybrid dosage forms (e.g., hydrogels, scaffolds, implants) with confounded mechanisms, or when key formulation fields were not reported. The overarching goal is to evaluate how well machine-learning models generalize across heterogeneous, multi-source literature data and to quantify the attainable predictive ceiling and its robustness to feature augmentation \citep{ICHQ8R2, Bannigan2021, Bannigan2023LAI, Bao2025IJP}. Of the 321 curated formulations, the paired Peppas modeling export retained 300 formulation-level rows meeting joint target-quality and modeling-record criteria; 294 of these rows fell within the conventional $0 \le n \le 2$ interpretability window and six had higher empirical fitted exponents. The retained numeric design matrices contained no missing feature values after preprocessing. \texttt{Burst\_24h} regression and classification used all 321 formulations.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\linewidth]{Fig_1}
+  \caption{Study workflow for evaluating predictability limits in PLGA microparticle drug-release data. A published, multi-study dataset of \textit{in vitro} release curves is processed to derive physics-informed mechanistic targets (Korsmeyer--Peppas parameters and burst metrics), which are then modeled under formulation-grouped validation and DOI-level leave-one-study-out validation. Reliability is assessed via generalization tests and diagnostics that quantify where prediction is stable versus fundamentally uncertain (e.g., applicability domain, study-level variance, and uncertainty proxies).}
+  \label{fig:workflow}
+\end{figure}
+
+\subsection{Digitized release data provenance and uncertainty}
+The release profiles in the curated dataset were originally obtained from the primary literature as discrete (time, release) pairs. Most curves were digitized from published release-profile figures using WebPlotDigitizer (v4.x) \citep{Rohatgi2022WebPlotDigitizer}, with a small minority extracted from tabular or supplementary numerical data when available. No explicit digitization-error propagation (e.g., repeated digitization trials or uncertainty bands) was reported; digitization/transcription uncertainty is therefore treated here as a component of the expected experimental heterogeneity in literature-derived systems.
+
+
+To reduce sensitivity to irregular sampling and to support consistent downstream target estimation, release curves were optionally resampled using monotone piecewise cubic Hermite interpolation (PCHIP), which preserves curve shape and monotonicity while generating uniformly sampled trajectories \citep{FritschCarlson1980, Virtanen2020SciPy}. For mechanistic target estimation, $n$ and $K$ were computed from the original digitized points (after unit standardization and QC; Section~\ref{subsec:targets}) rather than from resampled trajectories, to avoid interpolation-induced correlations. PCHIP resampling was used only for burst extraction at 24~h when a study did not report a measurement exactly at 24~h, and for visualization/standardization checks. Basic curve-level quality control excluded formulations with fewer than five sampled time points (insufficient resolution for stable kinetic estimation; Section~\ref{subsec:targets}). Fitted exponents above $n=2$ were treated as outside the conventional Korsmeyer--Peppas interpretability window, not as automatic deletion criteria for diagnostic modeling; Figure~\ref{fig:pred_actual_n} therefore shows the paired modeling export directly, including six high empirical fitted exponents. Importantly, the observed prediction errors substantially exceed reported digitization uncertainty in comparable extraction studies \citep{Drevon2017WPD}, indicating that inter-study variability (manufacturing and reporting heterogeneity) rather than graphical extraction error dominates the effective noise floor in this heterogeneous literature compilation \citep{Fredenberg2011, FreibergZhu2004}.
+
+\subsection{Unique formulation and formulation-level grouping}
+\label{subsec:formulation_index}
+A \textit{unique formulation} is defined as a single distinct value of \texttt{Formulation Index}, corresponding to one reported formulation instance (i.e., a unique combination of drug and key formulation attributes from a single source study). All time points sharing the same index are treated as a single release curve. To prevent temporal leakage (multiple time points from the same curve appearing in both training and test sets), formulation-grouped validation and holdout splitting used group-based strategies where \texttt{Formulation Index} is the grouping variable \citep{Roberts2017CVStructure}. Thus, each formulation is confined to a single fold, ensuring that evaluation generalizes to entirely unseen formulations rather than interpolating over additional time points from known curves.
+
+For all predictive tasks, models were trained and evaluated on a formulation-level design matrix with exactly one row per \texttt{Formulation Index} (one prediction per formulation). The long-format (time, release) table was used only for target engineering and quality control (Section~\ref{subsec:targets}) and was not used as repeated training rows for formulation-level prediction to avoid implicit weighting of formulations with denser sampling.
+
+\subsection{Unit conventions and standardization}
+\label{subsec:units}
+\subsubsection{Time axis and burst definition}
+Release curves record \texttt{Time} as reported in the source study and \texttt{Release} as a fraction (0--1; slight overshoot above 1 can occur in reported cumulative data). All time values were converted to hours prior to burst extraction and kinetic fitting. When time was reported in minutes, days, or weeks, values were converted to hours using 1~min = 1/60~h, 1~day = 24~h, and 1~week = 168~h; studies with ambiguous time units were excluded. For burst analysis, \texttt{Burst\_24h} is defined as the cumulative release at 24~h and is obtained by one-dimensional interpolation at the 24-hour mark when a measurement at exactly 24~h is unavailable.
+
+\subsubsection{Polymer molecular weight}
+Polymer molecular weight is represented by a single numeric feature (\texttt{Polymer MW}) assembled from literature-reported fields with the priority order $M_w$ (weight-average) $\;>\;$ $M_n$ (number-average) $\;>\;$ an unspecified molecular-weight field when neither $M_w$ nor $M_n$ is available. Molecular-weight values were converted to kDa when reported in Da. Values are otherwise used as reported; any residual heterogeneity in polymer molecular weight reporting is treated as part of the literature noise floor \citep{Fredenberg2011, MakadiaSiegel2011, Jain2000}.
+
+\subsubsection{LA: GA ratio}
+The lactic-to-glycolic ratio is represented as a numeric feature (\texttt{LA/GA}) and used directly as \texttt{LA\_GA\_numeric}. Ratios reported textually in the source literature (e.g., ``50:50'') were converted upstream into a single numeric ratio consistent with this representation.
+
+\subsection{Mechanistic target engineering}
+\label{subsec:targets}
+\subsubsection{Korsmeyer--Peppas parameterization}
+Rather than learning release percentages at arbitrary times, the learning targets were defined as physics-informed parameters from the Korsmeyer--Peppas power-law model \citep{Korsmeyer1983, RitgerPeppas1987}:
+\begin{equation}
+\frac{M_t}{M_\infty} = K\, t^n,
+\end{equation}
+where $n$ is the release exponent (mechanistic regime indicator), and $K$ is a rate constant. For each formulation, $n$ and $K$ were estimated using log--log linear regression of $\log(M_t/M_\infty)$ versus $\log(t)$ over the sub-60\% release region ($M_t/M_\infty \le 0.60$) to reduce late-time saturation effects. Because the log--log fit is undefined at $t=0$ and at $M_t/M_\infty = 0$, time points with $t \le 0$ or $M_t/M_\infty \le 0$ were excluded from the Peppas regression. When early-time values were reported as exactly zero due to assay resolution, the first strictly positive release time point was used as the start of the fitting window. Fitted exponents above $n=2$ were flagged as outside the conventional interpretability window; they were retained in the diagnostic paired modeling export when the fit otherwise met target-quality and modeling-record criteria. Formulations with fewer than five time points were excluded from mechanistic fitting to reduce unstable parameter estimates.
+
+\subsubsection{Initial burst metric and risk classes}
+To address the known sensitivity of early-time release to formulation and processing heterogeneity \citep{Fredenberg2011, Yoo2020Burst, FreibergZhu2004}, \texttt{Burst\_24h} was computed by interpolation at 24~h after time-unit standardization (Section~\ref{subsec:units}). In addition to regression on \texttt{Burst\_24h}, an operational burst-risk classification task binned formulations into two burst-risk regimes using a single threshold selected to separate lower/moderate early release from high early release:
+\begin{itemize}
+  \item Class 0 (Low/moderate burst): \texttt{Burst\_24h} $< 20\%$
+  \item Class 1 (High burst): \texttt{Burst\_24h} $\ge 20\%$
+\end{itemize}
+No class reweighting, resampling, or synthetic augmentation was applied; the classifier was trained directly on the available labeled formulations. Given the severe class imbalance observed in the compiled literature, classification results were interpreted using class-sensitive metrics rather than accuracy alone \citep{HeGarcia2009Imbalanced, SokolovaLapalme2009Metrics}.
+
+\subsection{Feature engineering and model matrix}
+A fixed, purely numeric feature set ($p=15$) was used for all learning tasks (mechanistic parameters and burst regression/classification). The feature set comprised Drug MW, Drug LogP, Drug TPSA, MolLogP, TPSA, ExactMolWt, NumHDonors, NumHAcceptors, RotatableBonds, Polymer MW, LA\_GA\_numeric, Hydrophilicity Index, Particle Size, Drug Loading Capacity, and Drug Encapsulation Efficiency. Chemical descriptors were computed from drug SMILES using RDKit \citep{RDKitZenodo}; overlapping mass descriptors were retained because they originate from distinct curated versus RDKit-derived representations and were treated as diagnostic covariates rather than mechanistic causal claims. Formulation and polymer descriptors were taken from curated literature fields.
+
+In addition, a composite \textit{Hydrophilicity Index} was defined as
+\begin{equation}
+\text{Hydrophilicity Index} = \left(\frac{1}{\text{LA/GA}}\right)\left(\frac{1}{\text{Polymer MW}}\right),
+\end{equation}
+to provide a monotonic proxy for polymer aqueous accessibility that captures the joint directionality of increased glycolide content (lower LA: GA) and reduced chain length on water penetration and degradation propensity \citep{MakadiaSiegel2011, Fredenberg2011}. This composite descriptor is used only as a directional monotonic encoding, not a physical quantity; it serves as a heuristic feature summarizing two well-established qualitative trends in PLGA behavior \citep{MakadiaSiegel2011, Fredenberg2011}.
+
+\subsection{Formulation-method augmentation}
+To test whether predictive performance was limited by omission of high-level process information rather than intrinsic variability, a robustness analysis was performed by augmenting the feature set with a categorical \texttt{Formulation Method} variable. Detailed reported preparation routes were harmonized into canonical method categories where possible (e.g., O/W, S/O/W, W/O/W, and related emulsion-route labels) and encoded using one-hot encoding within the training folds.
+
+All preprocessing, encoding, and scaling were performed inside cross-validation folds to prevent information leakage. Model architectures, validation splits, and hyperparameters were unchanged from the primary analysis. The objective of this experiment was not to optimize performance but to test whether inclusion of a coarse process descriptor materially altered global predictability. Improvement limited to marginal changes in $R^2$ was interpreted as evidence that predictive performance is constrained by missing fine-grained structural descriptors rather than omission of high-level formulation categories.
+
+\subsection{Preprocessing, model families, and specification}
+To avoid optimistic bias in a heterogeneous, literature-derived dataset, all preprocessing steps (imputation and scaling) were performed within-fold during validation. Missing values in the originally curated feature fields were handled exclusively via mean imputation using training data only, and features were standardized using a scaler fit on the training portion of each fold \citep{Pedregosa2011Sklearn}. Thus, statements that modeling matrices contained no missing values refer to the post-preprocessing matrices used by each fold, not to complete reporting in the source literature. No missingness-indicator variables were included.
+
+\subsubsection{Model families as probes of learnability}
+Regression targets ($n$, $K$, and \texttt{Burst\_24h}) were modeled using a stacked ensemble comprising three base learners: random forests, gradient-boosted trees, and an RBF-kernel support vector regressor, with a linear ridge meta-learner \citep{Breiman2001RF, CortesVapnik1995SVM, HoerlKennard1970Ridge, Wolpert1992Stacked, Chen2016XGBoost}. Hyperparameters were fixed (no grid search or Bayesian tuning) to emphasize interpretability and to quantify information limits under realistic inter-study heterogeneity rather than to optimize benchmark performance. The ensemble was selected to span tree-based, kernel-based, and linear hypothesis classes, allowing predictive consistency across model families to be interpreted as evidence of a learnable signal rather than model-specific fitting. We retained the stacked ensemble as the primary diagnostic model because it provides a single heterogeneous model family for CV, LOSO, AD, and uncertainty analyses; benchmark models are reported separately to show that the observed information ceiling is not an artifact of this choice.
+
+To prevent stacking leakage, the meta-learner was trained only on out-of-fold predictions of the base learners generated within the training portion of each outer validation split. Specifically, within each outer grouped fold, base-learner predictions used to train the meta-learner were produced via an inner grouped cross-validation on the outer training set only; no samples from the outer test fold were used to fit the base learners or the meta-learner. Final predictions for the held-out outer fold were generated by refitting base learners on the full outer-training set and applying the trained meta-learner.
+
+For benchmarking, we also evaluated baseline model families under the same grouped cross-validation protocol: ordinary least-squares linear regression, a random forest regressor, and gradient-boosted decision trees (XGBoost) \citep{Breiman2001RF, Chen2016XGBoost}. These baselines were used diagnostically to assess whether predictive performance was consistent across structurally distinct hypothesis classes.
+
+Burst-risk classes were predicted using a gradient-boosted tree classifier (XGBoost) with a binary logistic objective \citep{Chen2016XGBoost}. As above, hyperparameters were fixed by design to preserve the models' role as analytical probes rather than optimization targets.
+
+\subsection{Validation protocol}
+Model performance was assessed using grouped cross-validation, where the grouping variable was \texttt{Formulation Index} (Section~\ref{subsec:formulation_index}). Regression performance was summarized using $R^2$, MAE, and RMSE computed from pooled out-of-fold predictions at the formulation level. A separate grouped holdout split (80/20 by formulation) was used as an additional leakage check for the burst-risk classifier.
+
+To test generalization across laboratories, we additionally performed leave-one-study-out (LOSO) validation at the DOI level. Each iteration held out one entire study, trained the stacked ensemble on the remaining studies, and evaluated on the held-out DOI. Regression performance under LOSO was reported using pooled $R^2$, MAE, and RMSE across all held-out studies.
+
+For burst-risk classification, performance was summarized using the confusion matrix, per-class precision and recall, and macro-averaged F1 (Macro-F1), computed from grouped predictions to avoid within-formulation leakage \citep{HeGarcia2009Imbalanced, SokolovaLapalme2009Metrics}.
+
+\subsection{Variance decomposition by study identity (ICC-1)}
+To quantify the proportion of variance attributable to study-level effects (proxies for laboratory-specific processing differences), we performed a one-way random-effects analysis (ICC-1) across studies that contributed at least 2 formulations. For each target ($n$, $K$, and \texttt{Burst\_24h}), variance components were estimated using a one-way random-effects model, yielding $\sigma^2_{\text{between}}$ and $\sigma^2_{\text{within}}$. ICC(1) was computed as
+\begin{equation}
+\mathrm{ICC}(1) = \frac{\sigma^2_{\text{between}}}{\sigma^2_{\text{between}} + \sigma^2_{\text{within}}}
+\end{equation}
+and inference followed standard ICC formulations for one-way random-effects designs \citep{ShroutFleiss1979ICC, McGrawWong1996ICCInference}. An ANOVA $F$-test was used to assess whether between-study variability exceeded within-study variability, and results were reported for the subset of studies meeting the minimum formulation-count criterion.
+
+\subsection{Applicability domain and uncertainty quantification}
+\label{sec:methods_ad_uq}
+Given the risk of extrapolation in QSAR and QSPR style modeling on heterogeneous chemical space, applicability-domain (AD) analysis was used to separate ``in-domain'' predictions from high-leverage extrapolations \citep{OECD2004QSAR, OECD2007QSARGuidance, WeaverGleeson2008, Netzeva2005AD, Tropsha2010BestPracticesQSAR, Gramatica2007QSARValidation}. Leverage values were computed from the standardized feature matrix $X$ as the diagonal of the hat matrix $H = X(X^\top X)^{-1}X^\top$ (Williams-plot analysis). A warning leverage threshold was used to flag extrapolative points, defined as $h^* = 3p/N$, where $p$ is the number of predictor features and $N$ is the number of unique formulations evaluated for a given target. Performance was reported separately for formulations inside and outside the warning leverage region to test whether the AD behaves as a monotone safety filter or instead reveals heterogeneous islands of predictability across literature sub-domains \citep{WeaverGleeson2008, Netzeva2005AD}.
+
+Prediction uncertainty was quantified using an ensemble-disagreement proxy: for each formulation, the uncertainty score was defined as the standard deviation of the base-learner predictions within the stacked model. This uncertainty was not calibrated to probabilistic coverage; it was used diagnostically to test whether error increases with model disagreement, consistent with the study's emphasis on reliability over headline accuracy.
+
+\subsection{Reporting-gap analysis and feature importance}
+To relate predictive performance to reporting practices in the literature, we quantified variable availability across the compiled studies and compared it with predictive importance and mechanistic relevance. Availability percentages were computed at the formulation level after harmonization of synonymous reporting fields. In particular, polymer molecular weight was represented as a composite feature using the priority order $M_w > M_n >$ unspecified molecular weight; if multiple molecular-weight fields appeared within a study, the harmonized value followed this priority rule. Mechanistic relevance was grounded in established PLGA release pathways and the known sensitivity of early release to microstructure and processing conditions \citep{Fredenberg2011, FreibergZhu2004, Jain2000, Yoo2020Burst, KloseSiepmann2006Porosity}.
+
+Feature importance values for the prediction of the release exponent $n$ were derived from a random forest regressor using standard impurity-based importance scores (mean decrease in impurity) \citep{Breiman2001RF}. Importance values were computed on grouped cross-validation training folds and summarized as average percent contribution across features; only features exceeding a 5\% importance threshold were reported.
+
+Mechanistically relevant but unreported process variables (e.g., internal porosity, solvent removal rate, stirring/homogenization parameters, and polymer end-group chemistry) were identified from established PLGA release mechanisms and recorded as absent when not quantitatively specified in the source articles \citep{Fredenberg2011, FreibergZhu2004, Jain2000, KloseSiepmann2006Porosity, Yoo2020Burst}.
+
+\section{Results and Discussion}
+
+\subsection{Dataset Overview and Feature Summary}
+
+The analyzed dataset comprises 321 unique PLGA microparticle formulations reported across 113 primary studies. In total, it contains 4,913 release measurements spanning 89 different drugs, with numerical values originally extracted from graphical literature sources using digitization tools \citep{Rohatgi2022WebPlotDigitizer, Drevon2017WPD}. Individual formulations contributed between 5 and 48 sampling time points (average $\sim$15 per curve), indicating substantial variation in reporting density across studies. The observations were organized into a fixed-design matrix with 15 numerical covariates.
+
+
+To characterize the drugs, we used RDKit to derive physicochemical descriptors from SMILES strings \citep{RDKitZenodo}. These included molecular weight, lipophilicity (MolLogP), topological polar surface area, rotatable bonds, and hydrogen-bond counts. We supplemented these with additional drug properties as reported in the source papers. The remaining features describe formulation and polymer attributes commonly reported for PLGA microparticles, including polymer molecular weight and LA: GA ratio, particle size, drug loading and encapsulation efficiency, and a composite hydrophilicity index \citep{MakadiaSiegel2011, Fredenberg2011, Jain2000, FreibergZhu2004}.
+
+\begin{table}[H]
+\caption{Summary statistics of key inputs and targets across 321 formulations (formulation-level means shown). Polymer MW is in kDa; particle size is in $\mu$m; loading and encapsulation are in \%. Peppas $n$ is dimensionless; Peppas $n$ and $K$ are reported for the paired Peppas modeling export ($N=300$, including six high empirical fits with $n>2$). Peppas $K$ was computed after expressing time in hours; because $K$ depends on the fitted exponent $n$, values are descriptive fitted constants rather than directly comparable dimensional quantities across all formulations. \texttt{Burst\_24h} is a unitless fraction. Values slightly above 1 can occur due to assay normalization and digitization noise \citep{Drevon2017WPD}.}
+\label{tab:summary_stats}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.05}
+
+% Mean±SD is now a fixed-width column that won't overprint into Min/Max
+\begin{tabularx}{\linewidth}{@{}X l
+S[table-format=3.0]
+>{\raggedleft\arraybackslash}p{2.35cm}
+S[table-format=4.3]
+>{\raggedright\arraybackslash}p{1.25cm}@{}}
+
+
+\toprule
+Feature & Source & {N} & {Mean $\pm$ SD} & {Min} & {Max} \\
+\midrule
+Drug MW                       & Drug property & 321 & \makecell[r]{432.41\\$\pm$232.60} & 130.08 & 1488.81 \\
+Drug LogP                     & Drug property & 321 & \makecell[r]{2.76\\$\pm$2.35}     & -11.55 & 9.11 \\
+Drug TPSA                     & Drug property & 321 & \makecell[r]{101.26\\$\pm$96.79}  & 6.48   & 701.77 \\
+Polymer MW                    & Formulation   & 321 & \makecell[r]{37.07\\$\pm$29.09}   & 2.30   & 215.00 \\
+Particle Size                 & Formulation   & 321 & \makecell[r]{46.04\\$\pm$46.46}   & 1.15   & 295.70 \\
+Drug Loading Capacity         & Formulation   & 321 & \makecell[r]{11.79\\$\pm$9.42}    & 0.02   & 61.90 \\
+Drug Encapsulation Efficiency & Formulation   & 321 & \makecell[r]{67.07\\$\pm$22.88}   & 1.31   & 100.00 \\
+\midrule
+Peppas $n$                    & Target        & 300 & \makecell[r]{0.710\\$\pm$0.458}   & 0.019  & 3.219 \\
+Peppas $K$                    & Target        & 300 & \makecell[r]{0.209\\$\pm$0.203}   & 0.000  & 1.357 \\
+\texttt{Burst\_24h}           & Target        & 321 & \makecell[r]{0.811\\$\pm$0.197}   & 0.032  & 1.082 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+
+
+
+Korsmeyer--Peppas parameterization was successful for the majority of formulations after restricting the fit to the sub-60\% release window, where this semi-empirical model is most interpretable during the early diffusion-dominated phase \citep{Korsmeyer1983, RitgerPeppas1987}. The paired Peppas modeling export retained 300 rows meeting joint target-quality and modeling-record criteria. Within this modeling subset, 294 rows had $n$ values inside the conventional interpretability window ($0 \le n \le 2$), while six rows had higher empirical fitted exponents and are shown explicitly in Figure~\ref{fig:pred_actual_n}. Although $K$ could be numerically estimated for 321 formulations before paired-modeling restriction, paired $n/K$ modeling and the Peppas target summaries in Table~\ref{tab:summary_stats} use the 300-formulation subset satisfying joint target-quality and modeling-matrix criteria; all predictive analyses of Peppas targets therefore use $N=300$. The estimated modeling-target release exponent $n$ had a mean of 0.71 (SD = 0.46). Larger $n$ values in heterogeneous literature-derived data likely reflect combined diffusion/erosion behavior and fit sensitivity to protocol- and microstructure-level differences \citep{RitgerPeppas1987, Fredenberg2011, Klose2011Sink}. The modeling-target rate constant $K$ averaged 0.21 (SD = 0.20). \texttt{Burst\_24h} had a mean of 0.81 (SD = 0.20), indicating substantial early-time release in most formulations, which is consistent with known surface- and porosity-driven burst mechanisms in PLGA microparticles \citep{Yoo2020Burst, Fredenberg2011, KloseSiepmann2006Porosity}.
+
+\begin{table}[H]
+\centering
+\caption{Target accounting for formulation-level modeling exports.}
+\label{tab:target_accounting}
+\begin{tabularx}{\linewidth}{X c}
+\toprule
+Dataset step & Formulations \\
+\midrule
+Total curated formulations & 321 \\
+Valid \texttt{Burst\_24h} targets used for burst regression/classification & 321 \\
+Numerically estimated Peppas $K$ values before paired-modeling restriction & 321 \\
+Peppas paired modeling export & 300 \\
+Peppas $K$ rows retained in paired modeling export & 300 \\
+Peppas $n$ rows within $0 \le n \le 2$ in paired modeling export & 294 \\
+High empirical Peppas $n$ rows ($n>2$) retained in paired modeling export & 6 \\
+Formulations excluded from paired Peppas modeling export & 21 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\FloatBarrier
+
+\subsection{Grouped Cross-Validation Performance of the Stacked Ensemble}
+
+All performance metrics are computed at the formulation level (one prediction per formulation). We summarized grouped 10-fold cross-validation performance for the three regression targets in Table~\ref{tab:cv_performance}. To prevent within-formulation leakage, we used the \textit{Formulation Index} as the grouping variable, which forces generalization to unseen formulation instances and is recommended when observations have clustered dependence structures \citep{Roberts2017CVStructure}. The stacked ensemble uses model combination to improve robustness across heterogeneous regimes \citep{Wolpert1992Stacked}.
+
+Both Peppas targets showed modest stacked-ensemble learnability, with $K$ slightly higher by $R^2$ ($R^2 = 0.169$, MAE = 0.140, RMSE = 0.185; $N=300$) than the release exponent $n$ ($R^2 = 0.156$, MAE = 0.306, RMSE = 0.420; $N=300$) (Table~\ref{tab:cv_performance}). \texttt{Burst\_24h} exhibited weak recoverable signal ($R^2 = 0.100$, MAE = 0.144, RMSE = 0.186; $N=321$). These values support the interpretation that commonly reported covariates contain some signal but are insufficient for high-fidelity prediction in heterogeneous literature-derived PLGA data.
+
+\begin{table}[H]
+\centering
+\caption{Stacked ensemble cross-validation performance (grouped 10-fold, identical protocol to benchmark comparison). Peppas targets are evaluated on the modeling subset ($N=300$); \texttt{Burst\_24h} is evaluated on the full formulation set ($N=321$).}
+\label{tab:cv_performance}
+\begin{tabular}{lccc}
+\toprule
+Target & $R^2$ & MAE & RMSE \\
+\midrule
+Peppas\_n & 0.156 & 0.306 & 0.420 \\
+Peppas\_K & 0.169 & 0.140 & 0.185 \\
+Burst\_24h & 0.100 & 0.144 & 0.186 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\FloatBarrier
+
+\subsection{Benchmarking Against Baseline Model Families}
+
+We benchmarked the stacked ensemble against baseline models (linear regression, random forest, and gradient-boosted trees), using the same grouped cross-validation protocol (Table~\ref{tab:benchmarking}). Random forests and boosted trees are widely used as strong nonlinear baselines for tabular formulation data \citep{Breiman2001RF, Chen2016XGBoost}. For the release exponent $n$, the random forest achieved the highest $R^2$ ($R^2 = 0.338$), followed by XGBoost ($R^2 = 0.300$), while the stacked ensemble achieved $R^2 = 0.156$. For the rate constant $K$, the random forest also performed best ($R^2 = 0.276$), compared with the stacked ensemble at $R^2 = 0.169$. For \texttt{Burst\_24h}, the random forest achieved the highest grouped-CV $R^2$ ($R^2 = 0.188$), while the stacked ensemble reached $R^2 = 0.100$.
+
+Despite these variations, performance remained modest across model families. This convergence is itself informative for this study, because our goal is to diagnose information limits in the literature rather than to optimize a single predictor. In this setting, a stable performance plateau across distinct hypothesis classes supports the interpretation that missing covariates and study-level shifts are the dominant error sources \citep{Bao2025IJP, Bannigan2021}. We therefore retained the stacked ensemble for the primary transportability and uncertainty analyses, while using the benchmark table to show that no model family removes the information ceiling.
+
+\begin{table}[H]
+\centering
+\caption{Benchmark comparison across model families under grouped 10-fold cross-validation (same evaluation units as Table~\ref{tab:cv_performance}).}
+\label{tab:benchmarking}
+\begin{tabular}{llccc}
+\toprule
+Target & Model & $R^2$ & MAE & RMSE \\
+\midrule
+Peppas\_n & Linear & 0.090 & 0.302 & 0.422 \\
+Peppas\_n & RandomForest & 0.338 & 0.246 & 0.359 \\
+Peppas\_n & XGBoost & 0.300 & 0.245 & 0.370 \\
+Peppas\_n & StackedEnsemble & 0.156 & 0.306 & 0.420 \\
+\midrule
+Peppas\_K & Linear & 0.141 & 0.132 & 0.182 \\
+Peppas\_K & RandomForest & 0.276 & 0.114 & 0.167 \\
+Peppas\_K & XGBoost & 0.144 & 0.125 & 0.182 \\
+Peppas\_K & StackedEnsemble & 0.169 & 0.140 & 0.185 \\
+\midrule
+Burst\_24h & Linear & 0.011 & 0.150 & 0.195 \\
+Burst\_24h & RandomForest & 0.188 & 0.125 & 0.177 \\
+Burst\_24h & XGBoost & 0.090 & 0.130 & 0.187 \\
+Burst\_24h & StackedEnsemble & 0.100 & 0.144 & 0.186 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{Fig_2}
+\caption{Benchmarking results for the release exponent $n$ and rate constant $K$ under grouped cross-validation.}
+\label{fig:bench_bar}
+\end{figure}
+
+\FloatBarrier
+
+\subsection{Feature importance}
+
+Feature importance for the prediction of $n$ is summarized in Table~\ref{tab:feature_importance}. Drug loading capacity accounted for the largest share (14.9\%), followed by the hydrophilicity index (12.7\%), drug encapsulation efficiency (11.9\%), particle size (11.4\%), and polymer molecular weight (8.7\%). This ranking is mechanistically plausible: loading and encapsulation shape the initial drug distribution, particle size affects diffusion length scales, and polymer hydrophilicity and molecular weight influence water penetration and degradation kinetics \citep{Fredenberg2011, MakadiaSiegel2011, AndersonShive1997PLGABiodeg}. The ranking also highlights a reporting asymmetry: the variables most likely to resolve release behavior are often reported only coarsely, while microstructure- and process-level drivers are largely absent.
+
+\begin{table}[H]
+\centering
+\caption{Features contributing $>$5\% importance for prediction of release exponent $n$ (Random Forest).}
+\label{tab:feature_importance}
+\begin{tabular}{lc}
+\toprule
+Feature & Importance (\%) \\
+\midrule
+Drug Loading Capacity & 14.9 \\
+Hydrophilicity Index & 12.7 \\
+Drug Encapsulation Efficiency & 11.9 \\
+Particle Size & 11.4 \\
+Polymer MW & 8.7 \\
+Drug MW & 6.3 \\
+ExactMolWt & 5.9 \\
+Drug LogP & 5.5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{Fig_3}
+\caption{Top feature importances for predicting the release exponent $n$.}
+\label{fig:feature_imp}
+\end{figure}
+
+\FloatBarrier
+
+To test whether additional methodological metadata could materially affect performance, we added one-hot-encoded harmonized formulation-method categories (e.g., O/W, S/O/W, W/O/W) as features. This yielded a negligible improvement ($\Delta R^2 < 0.01$), suggesting that method labels alone do not resolve microstructure-level variation unless accompanied by quantitative process descriptors (e.g., solvent removal kinetics, homogenization energy, and porosity measures) \citep{Jain2000, KloseSiepmann2006Porosity, Yoo2020Burst}.
+
+\subsection{\texorpdfstring{Predicted Versus Actual: Release Exponent $n$}{Predicted Versus Actual: Release Exponent n}}
+
+Predicted values for $n$ captured only part of the observed variation and showed lower dispersion than the experimental observations. This contraction is consistent with regression-to-the-mean under heterogeneous measurement noise and latent study-level shifts, where the reported covariates capture only a subset of the mechanistic drivers \citep{Fredenberg2011, Klose2011Sink}. Practically, the shrinkage indicates that the model is more reliable for ranking typical formulations than for confidently identifying extreme $n$ regimes without additional microstructure or process descriptors.
+
+\subsection{Burst Release: Regression and Classification}
+
+\paragraph{Classification Results}
+The 24-hour burst release was the least predictable regression target ($R^2 = 0.100$). As a complementary diagnostic, we evaluated a two-class burst-risk classification task, with bins defined as low/moderate burst ($<20\%$) and high burst ($\ge 20\%$). At the formulation level (321 unique formulations), the distribution was highly skewed: 316 formulations (98.4\%) were high-burst and 5 (1.6\%) were low/moderate-burst. The confusion matrix (Table~\ref{tab:confusion_matrix}) confirmed that the model predicted only the majority class across all folds, yielding high apparent accuracy (0.984) but a macro-F1 of only 0.496. Macro-averaged metrics are appropriate in this setting because they penalize trivial majority-class predictors and reflect minority-class failure \citep{SokolovaLapalme2009Metrics, HeGarcia2009Imbalanced}.
+
+\paragraph{Diagnostic Interpretation}
+This distribution is itself a diagnostic finding about the published record, not a model failure. The literature, as compiled, reflects typical PLGA microparticle outcomes under common emulsion-solvent evaporation conditions, where substantial early-time release is often observed \citep{Jain2000, Yoo2020Burst, Fredenberg2011}. In this setting, classification provides a compact summary of dataset imbalance and is not intended as a deployable predictor of low-burst formulations.
+
+Low-burst formulations are known to depend on microstructure- and process-level variables such as internal porosity, surface drug enrichment, solvent removal kinetics, and post-processing steps, which are rarely quantified in sufficient detail to support cross-study prediction \citep{Yoo2020Burst, Fredenberg2011, KloseSiepmann2006Porosity}. Consequently, the extreme imbalance renders standard classification uninformative. Standard remediation strategies such as synthetic oversampling (SMOTE), cost-sensitive loss weighting, or ordinal regression were considered \citep{Chawla2002SMOTE, HeGarcia2009Imbalanced}. They were deliberately not applied, since synthetic minority generation would create decision boundaries in sparsely populated regions of the feature space without adding a mechanistic signal. The degeneracy is therefore diagnostic: it reflects both the scarcity of low-burst formulations in the published record and the absence of quantitative process covariates needed to distinguish low-burst from high-burst outcomes (Section~\ref{sec:reporting_gaps}, Table~\ref{tab:reporting_gaps}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{Fig_4}
+\caption{Predicted versus observed release exponent $n$ (grouped cross-validation) for the paired Peppas modeling subset ($N = 300$ formulations). The dashed diagonal indicates parity. High empirical fitted exponents visible above $n=2$ are retained in this diagnostic prediction export and are included in the Peppas $n$ modeling-target summary in Table~\ref{tab:summary_stats}.}
+\label{fig:pred_actual_n}
+\end{figure}
+
+\FloatBarrier
+
+\subsection{Applicability Domain Analysis}
+\label{sec:results_ad_uq}
+
+Applicability-domain (AD) analysis was performed using leverage-based Williams plots, with warning leverage threshold $h^* = 3p/N$, where $p = 15$ is the number of predictor features and $N$ is the number of unique formulations evaluated for each target \citep{OECD2007QSARGuidance, Netzeva2005AD, WeaverGleeson2008}. For the Peppas targets ($N = 300$), $h^* = 45/300 = 0.150$. For \texttt{Burst\_24h} ($N = 321$), $h^* = 45/321 \approx 0.140$. Table~\ref{tab:ad_results} reports the results.
+
+For Peppas $n$ and $K$, 298 of 300 formulations fall below the warning leverage threshold (in-domain), with only 2 high-leverage outliers. For \texttt{Burst\_24h}, 318 of 321 formulations are in-domain, with 3 high-leverage outliers. High-leverage formulations are therefore rare, indicating that most formulations lie within a chemically consistent covariate space as represented by reported features. The persistence of limited predictive performance within this in-domain region supports the interpretation that performance gaps are driven primarily by unmeasured process and microstructure variables and by study-level shifts, rather than by covariate extrapolation. This interpretation is consistent with best-practice guidance that emphasizes the AD as necessary but not sufficient for transportability when important causal drivers are unmeasured \citep{OECD2004QSAR, Tropsha2010BestPracticesQSAR}.
+
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{Fig_5}
+\caption{Distribution of 24-hour burst release across the full dataset ($N=321$). The vast majority of formulations exhibit high burst under the binary $20\%$ threshold, creating a class imbalance that limits discriminative modeling.}
+\label{fig:burst_hist}
+\end{figure}
+
+
+\begin{table}[H]
+\centering
+\caption{Confusion matrix for two-class burst-risk classification (321 formulations). Accuracy = 0.984; Macro-F1 = 0.496.}
+\label{tab:confusion_matrix}
+\begin{tabular}{lcc|c}
+\toprule
+ & \multicolumn{2}{c}{Predicted} & \\
+\cmidrule(lr){2-3}
+Actual & Low/Mod & High & Recall \\
+\midrule
+Low/Mod ($<20\%$) & 0 & 5 & 0.00 \\
+High ($\geq 20\%$) & 0 & 316 & 1.00 \\
+\midrule
+Precision & 0.00 & 0.984 & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\FloatBarrier
+
+
+
+\begin{table}[H]
+\centering
+\caption{Applicability-domain analysis: formulation-level leverage with $h^* = 3p/N$ computed per target.}
+\label{tab:ad_results}
+\begin{tabular}{llcccc}
+\toprule
+Target & Region & Count & $R^2$ & MAE & $h^*$ \\
+\midrule
+Peppas\_n & In-domain & 298 & 0.158 & 0.306 & 0.150 \\
+ & High-leverage & 2 & --- & --- & \\
+\midrule
+Peppas\_K & In-domain & 298 & 0.169 & 0.140 & 0.150 \\
+ & High-leverage & 2 & --- & --- & \\
+\midrule
+Burst\_24h & In-domain & 318 & 0.101 & 0.144 & 0.140 \\
+ & High-leverage & 3 & --- & --- & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Leave-One-Study-Out Validation}
+\label{sec:loso}
+
+To assess whether grouped cross-validation overestimates practical generalization, we performed leave-one-study-out (LOSO) validation. In this protocol, each of the 113 studies (unique DOIs) was held out in turn, the stacked ensemble was trained on the remaining studies, and evaluation was performed on the held-out study's formulations. A cross-DOI duplicate check identified only 2 formulation pairs sharing identical features across different DOIs, indicating minimal direct feature-duplicate leakage.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{Fig_6}
+\caption{Williams plot for applicability-domain analysis ($N = 300$ for Peppas targets, $N = 321$ for \texttt{Burst\_24h}). The vertical boundary corresponds to the warning leverage threshold $h^*$ computed for each target.}
+\label{fig:williams}
+\end{figure}
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{Fig_7}
+\caption{Applicability-domain analysis: formulation-level $R^2$ for in-domain formulations. High-leverage formulations are rare (e.g., $N=2$--3), preventing distinct performance estimation for that subgroup.}
+\label{fig:ad_bar}
+\end{figure}
+
+\FloatBarrier
+
+
+
+LOSO produced substantially lower pooled $R^2$ than grouped 10-fold CV across all three targets (Table~\ref{tab:loso}). Error metrics worsened clearly for $n$ and \texttt{Burst\_24h}, while $K$ showed a negative LOSO $R^2$ despite similar absolute-error magnitudes, indicating degraded out-of-study explanatory power rather than a large increase in absolute error. For the release exponent $n$, LOSO $R^2 = -0.061$ (MAE = 0.363, RMSE = 0.498), compared to grouped CV $R^2 = 0.156$ (MAE = 0.306, RMSE = 0.420). For $K$, LOSO $R^2 = -0.040$ (MAE = 0.142, RMSE = 0.179), and for \texttt{Burst\_24h}, LOSO $R^2 = -0.180$ (MAE = 0.202, RMSE = 0.245). Negative pooled $R^2$ under LOSO indicates systematic study-level shifts, where models trained on reported covariates do not transfer reliably to unseen studies and can perform worse than a mean predictor out-of-study \citep{Gramatica2007QSARValidation, Tropsha2010BestPracticesQSAR}. The contrast between formulation-grouped CV and LOSO localizes the performance collapse to the between-study variance component, consistent with heterogeneous in vitro conditions (e.g., sink conditions, medium changes, agitation, assay calibration) and unreported manufacturing details that influence microstructure and degradation \citep{Klose2011Sink, Fredenberg2011, Jain2000}.
+
+The gap between LOSO and grouped CV quantifies the magnitude of study-level confounding. Inter-study variability, driven by latent process variables (solvent removal rate, homogenization energy, internal porosity) and laboratory-specific implementation details, dominates the learnable signal. In this setting, the negative LOSO $R^2$ serves as a quantitative fingerprint of an information ceiling imposed by current reporting practices. This is directly aligned with recent discussions of why ML for polymeric long-acting injectables can plateau when formulation descriptors are incomplete or inconsistently defined across sources \citep{Bannigan2023LAI, Bao2025IJP}.
+
+\begin{table}[H]
+\centering
+\caption{Comparison of grouped 10-fold CV and leave-one-study-out (LOSO) validation (formulation-level evaluation).}
+\label{tab:loso}
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{3}{c}{Grouped 10-fold CV} & \multicolumn{3}{c}{LOSO} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+Target & $R^2$ & MAE & RMSE & $R^2$ & MAE & RMSE \\
+\midrule
+Peppas\_n & 0.156 & 0.306 & 0.420 & $-0.061$ & 0.363 & 0.498 \\
+Peppas\_K & 0.169 & 0.140 & 0.185 & $-0.040$ & 0.142 & 0.179 \\
+Burst\_24h & 0.100 & 0.144 & 0.186 & $-0.180$ & 0.202 & 0.245 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{Fig_8}
+\caption{Distribution of per-study $R^2$ under LOSO validation for the release exponent $n$ and rate constant $K$. Only studies contributing $\geq 3$ formulations to the held-out set are included in the histograms ($33$ studies for each Peppas target). Dashed vertical lines mark the all-study pooled LOSO $R^2$ values reported in Table~\ref{tab:loso}.}
+\label{fig:loso_dist}
+\end{figure}
+
+\subsubsection{Variance decomposition by study identity.}
+To quantify the fraction of total variance attributable to study-level effects, a one-way random-effects analysis (ICC-1) was performed on the studies contributing $\geq 2$ formulations \citep{ShroutFleiss1979ICC, McGrawWong1996ICCInference}. For the release exponent $n$, 70.2\% of the total variance was attributable to study identity (ICC = 0.702, $p < 0.001$). For $K$, the between-study fraction was 63.8\% (ICC = 0.638), and for \texttt{Burst\_24h}, 45.9\% (ICC = 0.459); all $F$-tests were significant at $p < 0.001$. These estimates show that a large fraction of the variance in fitted release parameters arises between laboratories rather than within formulations within a study. This is the variance component that LOSO exposes and that unreported process variables and in vitro protocol differences are expected to generate \citep{Klose2011Sink, Fredenberg2011}. The lower ICC for \texttt{Burst\_24h} is consistent with the idea that early-time release is sensitive to within-study batch and surface heterogeneity \citep{Yoo2020Burst, KloseSiepmann2006Porosity}.
+
+\begin{table}[H]
+\centering
+\caption{Variance decomposition of release parameters by study identity (ICC-1, one-way random effects model). Only studies contributing $\geq 2$ formulations are included.}
+\label{tab:icc}
+\begin{tabular}{lcccc}
+\toprule
+Target & Studies & Formulations & ICC(1) & $F$-test $p$ \\
+\midrule
+Peppas\_n & 57 & 265 & \textbf{0.702} & $<0.001$ \\
+Peppas\_K & 57 & 265 & \textbf{0.638} & $<0.001$ \\
+Burst\_24h & 57 & 265 & \textbf{0.459} & $<0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\FloatBarrier
+
+\subsection{Uncertainty Quantification}
+
+Prediction uncertainty was quantified using the standard deviation of base-learner predictions within each fold. For the release exponent $n$, ensemble disagreement showed little correlation with absolute prediction error in the current grouped-CV export (Pearson $r = 0.032$, $N=300$), indicating that base-learner spread is not a calibrated reliability signal for this dataset. This weak relationship is expected when a substantial component of error is driven by unmeasured study-level factors that are not recoverable from the reported feature set \citep{Gramatica2007QSARValidation, Tropsha2010BestPracticesQSAR}.
+
+\subsection{Reporting Gap Analysis}
+\label{sec:reporting_gaps}
+
+Table~\ref{tab:reporting_gaps} cross-references variable availability with predictive importance and mechanistic relevance. Drug loading capacity and the hydrophilicity index were the two largest feature-importance contributors for Peppas $n$ (14.9\% and 12.7\%, respectively), followed by drug encapsulation efficiency, particle size, and polymer molecular weight. Polymer molecular weight was reported in a standardized form ($M_w$) by 59\% of studies. Many studies instead reported an unspecified ``molecular weight'' value without distinguishing $M_w$ from $M_n$, and a small fraction reported only $M_n$. Because these reporting categories overlap across studies, we summarize availability at the formulation level. After harmonization (priority: $M_w > M_n >$ unspecified), a usable numeric polymer MW feature could be constructed for 64\% of formulations, and the remainder required imputation during fold-wise preprocessing. This distinction is important: the source literature contains missing or ambiguous fields, whereas the post-imputation matrices supplied to each model contain no missing numeric values. Critical polymer descriptors, including $M_n$ (5\% of studies) and polydispersity index (PDI, 4\%), were too sparse to include despite their established roles in controlling chain-end density and molecular weight distribution breadth, which influence degradation kinetics and pore formation \citep{AndersonShive1997PLGABiodeg, Fredenberg2011, MakadiaSiegel2011}. The harmonized formulation-method category (O/W, S/O/W, W/O/W, and related reported emulsion-route labels) was universally available but excluded from the primary numeric feature matrix to preserve a consistent numerical design space for leverage-based AD calculations. Exploratory models incorporating one-hot-encoded method indicators did not materially improve cross-validated performance ($\Delta R^2 < 0.01$), which suggests that method labels are insufficient surrogates for quantitative process descriptors \citep{Jain2000, KloseSiepmann2006Porosity}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{Fig_9}
+\caption{Uncertainty calibration for the release exponent $n$: ensemble disagreement versus absolute prediction error.}
+\label{fig:uncertainty_plot}
+\end{figure}
+
+\FloatBarrier
+
+
+
+Below these partially reported variables, Table~\ref{tab:reporting_gaps} lists mechanistically important process-level variables that were not systematically or quantitatively extractable from the source literature: internal porosity, solvent removal rate, stirring or homogenization parameters, and polymer end-group chemistry. These factors govern early-time release, skin formation, and the selection of the degradation pathway \citep{Fredenberg2011, KloseSiepmann2006Porosity, Yoo2020Burst}. For end-group chemistry, some information may be recoverable from polymer grade names, but grade-level identifiers were inconsistently reported across studies, preventing systematic extraction at scale \citep{MakadiaSiegel2011}. The asymmetry between variable importance and reporting completeness is notable: the most important single feature is frequently missing or ambiguously defined. In contrast, the process variables most likely to resolve the remaining variance are not quantitatively extractable. This pattern supports the interpretation that the predictive ceiling is set by field-wide reporting practices rather than by algorithmic limitations \citep{Bao2025IJP, Bannigan2023LAI}.
+
+\subsubsection{Proposed minimum reporting elements (MIADR checklist)}
+To improve cross-study reproducibility and enable predictive modeling that generalizes out of the study, we propose the following minimum reporting standards:
+\begin{itemize}
+\item \textbf{Polymer Characterization:} Both $M_w$ and $M_n$ (GPC), plus polydispersity index (PDI). Missing PDI and $M_n$ obscures the chain-length distribution that drives degradation heterogeneity \citep{AndersonShive1997PLGABiodeg, Fredenberg2011}.
+\item \textbf{End-Group Chemistry:} Explicit acid-terminated versus ester-capped status. This variable influences autocatalysis and degradation rate, and it is therefore expected to affect fitted rate constants such as $K$ \citep{MakadiaSiegel2011, Fredenberg2011}.
+\item \textbf{Solvent Removal:} Evaporation temperature, duration, pressure conditions, and phase volumes. These parameters govern skin formation and internal porosity and are directly linked to burst magnitude \citep{Yoo2020Burst, KloseSiepmann2006Porosity}.
+\item \textbf{Homogenization Energy:} Stirring rate (rpm), duration, and impeller or probe type. These variables determine droplet size distributions and microstructure and are not captured by method labels alone \citep{Jain2000, Fredenberg2011}.
+\item \textbf{Internal Structure:} Quantitative internal porosity (e.g., via mercury porosimetry or micro-CT) and surface drug enrichment proxies, since these are primary drivers of burst and early-time transport regimes \citep{KloseSiepmann2006Porosity, Yoo2020Burst}.
+\end{itemize}
+
+Adoption of these elements would provide the process-level covariates needed to reduce inter-study variance and align PLGA formulation reporting with Quality by Design principles, which emphasize defining and controlling critical material attributes and process parameters \citep{ICHQ8R2}. These recommendations are also consistent with the broader direction of ML-enabled formulation design, where model utility depends on standardized, information-rich descriptors \citep{Bannigan2021, Bannigan2023LAI, Bao2025IJP}.
+
+\begin{table}[H]
+\centering
+\caption{Reporting gap analysis: variable availability versus predictive importance and mechanistic relevance. Variables below the mid-rule were not systematically or quantitatively extractable from the source literature but are established mechanistic drivers of release behavior.}
+\label{tab:reporting_gaps}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{1.05}
+
+\begin{tabularx}{\linewidth}{
+P{2.7cm}
+P{1.45cm}
+>{\centering\arraybackslash}P{1.2cm}
+>{\centering\arraybackslash}P{1.2cm}
+Y
+P{2.2cm}
+}
+\toprule
+Variable & Category & \makecell{Extractable\\(\%; level)} & Importance (\%) & Mechanistic Role & In Model \\
+\midrule
+Drug loading & Formulation & 100 & 14.9 & Initial payload, drug--polymer interaction & Yes \\
+Hydrophilicity Index & Composite & 100 & 12.7 & Polymer aqueous accessibility proxy & Yes \\
+Encapsulation eff. & Formulation & 100 & 11.9 & Process efficiency proxy & Yes \\
+Particle size & Formulation & 100 & 11.4 & Surface area, diffusion path & Yes \\
+Polymer MW$^{a}$ & Polymer & 64$^{c}$ & 8.7 & Degradation rate, chain mobility & Yes (composite) \\
+Polymer $M_w$ & Polymer & 59 & --- & Weight-average MW; preferred source & Yes$^{b}$ \\
+Polymer $M_n$ & Polymer & 5 & --- & Number-average MW; chain-end density & No (94\% missing) \\
+PDI & Polymer & 4 & --- & MW distribution breadth & No (96\% missing) \\
+Formulation method & Process & 100 & --- & Microstructure determinant & No (categorical) \\
+Drug MW & Drug & 100 & 6.3 & Diffusivity, solubility & Yes (RDKit) \\
+ExactMolWt & Drug & 100 & 5.9 & Molecular size descriptor & Yes (RDKit) \\
+Drug LogP & Drug & 100 & 5.5 & Lipophilicity, partitioning & Yes (RDKit) \\
+\midrule
+Internal porosity & Microstructure & 0 & --- & Pore-mediated diffusion & No (not systematically extractable) \\
+Solvent removal rate & Process & 0 & --- & Skin formation, porosity & No (not systematically extractable) \\
+Stirring/homogenization & Process & 0 & --- & Droplet size, uniformity & No (not systematically extractable) \\
+End-group chemistry & Polymer & 0 & --- & End-group effects on degradation & No (not systematically extractable) \\
+\bottomrule
+\multicolumn{6}{l}{\scriptsize $^{a}$Composite of $M_w$, $M_n$, or unspecified MW (priority: $M_w > M_n >$ unspecified).} \\
+\multicolumn{6}{l}{\scriptsize $^{b}$Contributes to composite Polymer MW when available.} \\
+\multicolumn{6}{l}{\scriptsize $^{c}$Formulation-level availability after harmonization; study-level reporting categories are non-mutually exclusive.} \\
+\end{tabularx}
+\end{table}
+
+\FloatBarrier
+
+\section{Limitations}
+\label{sec:limitations}
+
+Several limitations of this study should be acknowledged. First, the release data were extracted primarily from published figures using WebPlotDigitizer, introducing digitization noise on the order of a few percent of the ordinate value per point. This uncertainty propagates into the fitted Korsmeyer--Peppas parameters, but is unlikely to explain the magnitude of the inter-study variance observed. Second, protocol heterogeneity across source studies, including differences in dissolution medium (PBS versus SIF), sink conditions, agitation method, assay procedures, and sampling schedules, represents a confound that cannot be fully disentangled from the compositional and formulation variables modeled here. Third, attributing the LOSO performance collapse to unreported process variables is a mechanistic interpretation supported by the reporting-gap analysis, but it is not a proven causal relationship. Unmeasured drug--polymer interactions, differences in polymer grade, and batch-to-batch PLGA variability may also contribute to between-study shifts. Fourth, burst release is highly sensitive to surface and internal microstructure, including surface porosity, skin thickness, and surface drug enrichment, which are rarely characterized in the source literature. This limits the interpretability and transportability of models for \texttt{Burst\_24h} and helps explain the negative LOSO $R^2$ observed for burst. Finally, the compiled dataset is dominated by microparticles produced using emulsion-based methods, and the conclusions may not extend to spray-dried, electrosprayed, or microfluidic formulations.
+
+% ...
+
+\section{Conclusion}
+
+This study evaluated the attainable predictability of poly(lactic-\emph{co}-glycolic acid) (PLGA) microparticle release behavior when models are trained on covariates commonly reported across studies in the published literature. The analysis examined 321 formulations from 113 studies spanning 89 drugs, utilizing a previously curated literature-mined repository, and parameterized early-time release using Korsmeyer--Peppas descriptors, with Peppas modeling performed on a 300-formulation subset. In grouped 10-fold cross-validation at the formulation level, the stacked ensemble achieved limited predictability for the release exponent $n$ ($R^2 = 0.156$, MAE = 0.306, RMSE = 0.420). Predictability was similarly limited for the rate constant $K$ ($R^2 = 0.169$) and for the 24-hour burst ($R^2 = 0.100$), consistent with the heightened sensitivity of early-time release to microstructure and processing conditions.
+
+Benchmarking against linear regression, random forests, and gradient-boosted trees showed modest differences in performance and convergence of model families near the same information ceiling. Random forests performed best for the Peppas targets ($R^2 = 0.338$ for $n$ and $R^2 = 0.276$ for $K$), but no model family produced high-fidelity prediction from the reported covariates alone. A robustness analysis further reinforced this interpretation. Augmenting the feature space with one-hot encoding of formulation method (e.g., O/W versus W/O/W) produced a negligible improvement in predictive performance ($\Delta R^2 < 0.01$), suggesting that coarse method labels do not substitute for quantitative descriptors of microstructure formation and processing energy input.
+
+The most consequential finding emerged when generalization was tested across laboratories. Leave-one-study-out (LOSO) validation led to a collapse in performance for mechanistic targets, with pooled LOSO $R^2$ values of $-0.061$ for $n$, $-0.040$ for $K$, and $-0.180$ for \texttt{Burst\_24h}. This indicates that models trained on literature covariates can perform worse than a mean predictor when applied to unseen studies. This behavior localizes the predictability ceiling to between-study heterogeneity and latent confounding rather than to within-study noise alone. Consistent with this conclusion, variance decomposition by study identity indicated that study-level effects account for a majority of the variance in fitted mechanistic parameters (ICC(1) = 0.702 for $n$ and ICC(1) = 0.638 for $K$). At the same time, burst showed substantial but smaller study attribution (ICC(1) = 0.459). Together, LOSO failure and high ICC values provide quantitative evidence that unreported or inconsistently reported process variables dominate the variance component that limits cross-study modeling.
+
+Burst behavior provided a complementary diagnostic of reporting limitations. Across the full set of 321 formulations, burst release was heavily skewed toward high early release under the binary $20\%$ threshold, with 316 formulations (98.4\%) in the high-burst class. Under this distribution, burst-risk classification collapsed to the majority class, yielding a macro-F1 of 0.496 despite high apparent accuracy. This highlights that the published record contains too few lower-burst examples and too little process metadata to support discriminative modeling of clinically desirable low-burst regimes. The limited burst regression performance ($R^2 = 0.100$) is therefore best interpreted as a signature of missing microstructure and processing covariates rather than as an intrinsic absence of structure in PLGA systems.
+
+These results have direct implications for how machine learning should be used in formulation science. When applied to heterogeneous datasets derived from the published literature, model performance should be interpreted as a measurement of information content rather than as a definitive limit on the predictability of PLGA release. The present study shows that only a weak signal is recoverable within the reported covariate space under grouped validation, and that generalization across laboratories breaks down because the dominant variance components lie outside that space. To move beyond the observed ceiling and enable reliable cross-study prediction, future PLGA microparticle reports should include standardized characterization of polymer molecular weight (including $M_w$ and $M_n$ with polydispersity), polymer end-group chemistry, quantitative solvent-removal protocols, explicit homogenization and emulsification parameters, and quantitative measures of internal porosity or microstructure. Adoption of these reporting elements would align the field more closely with Quality by Design principles and enable models to learn the process-to-microstructure-to-release relationships that are currently unidentifiable from published covariates.
+
+In summary, the primary barrier to cross-study predictive modeling of PLGA microparticle release is not model capacity but the incompleteness and lack of standardization of the published feature space. Future progress in data-driven PLGA formulation design will therefore depend on improved reporting standards and on routine measurement and disclosure of the process variables that set microstructure and early-time release behavior.
+
+
+
+
+\section*{CRediT authorship contribution statement}
+\textbf{Kushaan Sharma:} Conceptualization, Methodology, Software, Formal analysis, Investigation, Writing - original draft, Visualization. \\
+\textbf{Aryan Shah:} Software, Formal analysis, Validation, Writing - original draft. \\
+\textbf{Syna Sharma:} Writing - review \& editing. \\
+\textbf{Shreyan Shah:} Visualization. \\
+\textbf{Mansoor A. Khan, PhD, RPh:} Writing - review \& editing. \\
+\textbf{Mariame Ali, B.Sci. Pharm., Ph.D.:} Writing - review \& editing. \\
+
+
+\section*{Acknowledgements}
+The authors would like to thank the contributors of the Mendeley Data repository for providing the foundational dataset used in this analysis. 
+
+\section*{Funding}
+This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors. 
+
+\section*{Declaration of Competing Interest}
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+\section*{Reproducibility details}
+All supervised analyses used one row per formulation. Grouped 10-fold cross-validation used \texttt{Formulation Index} as the grouping variable, and LOSO validation used DOI as the held-out study identifier. Within each outer validation split, missing-value imputation and feature scaling were fit on the training fold only and then applied to the held-out fold. The fixed model settings used for the primary analyses are summarized in Table~\ref{tab:reproducibility_settings}; no grid search, Bayesian optimization, class reweighting, resampling, or synthetic augmentation was applied.
+
+\begin{table}[H]
+\centering
+\caption{Reproducibility settings for the primary modeling workflow.}
+\label{tab:reproducibility_settings}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\linewidth}{p{3.0cm}Y}
+\toprule
+Component & Setting \\
+\midrule
+Feature matrix & Fixed numeric 15-feature formulation-level matrix; one row per \texttt{Formulation Index}. \\
+Preprocessing & Mean imputation and standard scaling fit within each training fold only. \\
+Regression ensemble & Random forest (\texttt{n\_estimators}=200, \texttt{max\_depth}=10, \texttt{random\_state}=42); XGBoost regressor (\texttt{n\_estimators}=200, \texttt{max\_depth}=6, \texttt{learning\_rate}=0.05, \texttt{objective=reg:squarederror}); RBF-SVR (\texttt{C}=10, \texttt{gamma=scale}); ridge meta-learner (\texttt{alpha}=1.0); internal stacking CV = 5. \\
+Benchmark models & Linear regression; random forest (\texttt{n\_estimators}=100, \texttt{max\_depth}=10, \texttt{random\_state}=42); XGBoost regressor (\texttt{n\_estimators}=100, \texttt{max\_depth}=6, \texttt{learning\_rate}=0.05). \\
+Burst classifier & XGBoost binary classifier (\texttt{n\_estimators}=200, \texttt{max\_depth}=6, \texttt{learning\_rate}=0.05); binary threshold at \texttt{Burst\_24h}=0.20. \\
+Validation & Grouped 10-fold CV by \texttt{Formulation Index}; LOSO by DOI; burst holdout split 80/20 by formulation as an additional leakage check. \\
+Software environment & Python 3.13.5; numpy 2.3.5; pandas 2.3.2; scikit-learn 1.7.1; xgboost 3.1.3; RDKit 2025.9.4; scipy 1.16.1; statsmodels 0.14.6; openpyxl 3.1.5. \\
+Code version & Public analysis repository listed in Data availability. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section*{Data availability}
+The raw data used in this study were obtained from Mendeley Data: \cite{Bao2024Dataset}. Supplementary Table S1 accompanies this submission and lists the source DOI inventory. The Python code and reproducibility workflow used for the analysis are available at \href{https://github.com/doubleblind-release/plga-microparticle-release-artifact}{https://github.com/doubleblind-release/plga-microparticle-release-artifact}.
+
+
+\section*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
+The authors used OpenAI's ChatGPT as a language-editing and clarity support tool during manuscript preparation.
+The tool was used to improve the phrasing, organization, and readability of author-written text; all technical content, experimental design, analysis, and conclusions were developed and verified by the authors.
+
+% ...
+
+\bibliographystyle{elsarticle-harv}
+\bibliography{cas-refs}
+
+\end{document}
+
+\endinput
+%%
+%% End of file `elsarticle-template-harv.tex'.
+
+
+
